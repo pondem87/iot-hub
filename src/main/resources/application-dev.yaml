@@ -1,11 +1,29 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/iot_hub_dev
-    username: dev_iot_user
-    password: dev_iot_password
-    driver-class-name: org.postgresql.Driver
+    core:
+      url: jdbc:postgresql://localhost:5432/iothub_core
+      username: core_user
+      password: core_user_password
+      driver-class-name: org.postgresql.Driver
+    timeseries:
+      url: jdbc:postgresql://localhost:5432/iothub_timeseries
+      username: ts_user
+      password: ts_user_pass
+      driver-class-name: org.postgresql.Driver
+  flyway:
+    enabled: false
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     database: postgresql
     show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+jwt:
+  secret: c039fa094303399671f60a50102386488f3faa98b0d5478d1ad75dd7b2ddb723
+  expiration: 28800
+logging:
+  level:
+    root: INFO
+    com.pfitztronic.iothub: DEBUG

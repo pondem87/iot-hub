@@ -15,5 +15,5 @@ Key principles:
 ## 2. Documentation
 - [Requirements](docs/00-requirements.md)
 - [Use-case diagram](docs/00.1-requirements.drawio.svg)
-- [Detailed use case: 1](docs/00.2-detailed-use-cases-1.md)
+- [Detailed use case: 1](docs/00.2.0-manage-hub-account.md)
 - [Architecture](docs/01-architecture.md)

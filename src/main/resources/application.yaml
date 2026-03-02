@@ -1,3 +1,27 @@
 spring:
   application:
     name: iot-hub
+  datasource:
+    core:
+      url: jdbc:postgresql://localhost:5432/app_core
+      username: core_user
+      password: core_pass
+      driver-class-name: org.postgresql.Driver
+    timeseries:
+      url: jdbc:postgresql://localhost:5432/app_timeseries
+      username: ts_user
+      password: ts_pass
+      driver-class-name: org.postgresql.Driver
+  flyway:
+    enabled: false
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    database: postgresql
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: 28800

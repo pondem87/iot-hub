@@ -140,7 +140,7 @@ The layers:
     - verified
 - verification_code
     - user_id
-    - code
+    - code_hash
     - created_at
 #### Value objects
     1. phone_number
