@@ -2,10 +2,7 @@ package com.pfitztronic.iothub.core.authentication;
 
 import com.pfitztronic.iothub.core.authentication.repositories.impl.SessionRepository;
 import com.pfitztronic.iothub.core.authentication.repositories.interfaces.ISessionRepository;
-import com.pfitztronic.iothub.core.authentication.services.impl.JwtAuthenticationFilter;
-import com.pfitztronic.iothub.core.authentication.services.impl.JwtAuthenticationProvider;
-import com.pfitztronic.iothub.core.authentication.services.impl.JwtAuthenticationSessionService;
-import com.pfitztronic.iothub.core.authentication.services.impl.SessionManagementService;
+import com.pfitztronic.iothub.core.authentication.services.impl.*;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -27,9 +24,21 @@ public class AuthenticationModuleConfig {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(
+    public JwtAuthenticationSessionService jwtAuthenticationSessionService(
             JwtProperties jwtProperties,
-            ISessionRepository baseSessionRepository,
+            ISessionRepository baseSessionRepository
+    ) {
+        return new JwtAuthenticationSessionService(
+                jwtProperties,
+                new SessionManagementService(
+                        new SessionRepository(baseSessionRepository)
+                )
+        );
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(
+            JwtAuthenticationSessionService jwtAuthenticationSessionService,
             UserDetailsService userDetailsService,
             PasswordEncoder passwordEncoder
     ) {
@@ -37,12 +46,7 @@ public class AuthenticationModuleConfig {
         daoAuthenticationProvider.setPasswordEncoder(passwordEncoder);
 
         JwtAuthenticationProvider jwtAuthenticationProvider = new JwtAuthenticationProvider(
-                new JwtAuthenticationSessionService(
-                        jwtProperties,
-                        new SessionManagementService(
-                                new SessionRepository(baseSessionRepository)
-                        )
-                ),
+                jwtAuthenticationSessionService,
                 userDetailsService
         );
 
@@ -52,4 +56,11 @@ public class AuthenticationModuleConfig {
         );
     }
 
+    @Bean
+    public AuthenticationService authenticationService(
+            AuthenticationManager authenticationManager,
+            JwtAuthenticationSessionService jwtAuthenticationSessionService
+    ) {
+        return new AuthenticationService(authenticationManager, jwtAuthenticationSessionService);
+    }
 }

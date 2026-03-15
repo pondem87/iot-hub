@@ -20,6 +20,7 @@ public class SessionEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID sessionId;
+    @Column(length = 50, nullable = false)
     private String userId;
     private String userAgent;
     private Instant createdAt;

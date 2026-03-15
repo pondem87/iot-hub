@@ -1,11 +1,11 @@
 package com.pfitztronic.iothub.core.accounts.mappers;
 
 import com.pfitztronic.iothub.core.accounts.models.*;
-import com.pfitztronic.iothub.core.accounts.orm_models.AccountEntity;
-import com.pfitztronic.iothub.core.accounts.orm_models.UserEntity;
-import com.pfitztronic.iothub.core.accounts.orm_models.VerificationCodeEntity;
+import com.pfitztronic.iothub.core.accounts.orm_models.*;
 
 public class DomainOrmMapper {
+
+    // user model
     public static UserEntity toUserEntity(User user) {
         UserEntity entity = new UserEntity();
         entity.setUserId(user.getUserId().number());
@@ -17,22 +17,24 @@ public class DomainOrmMapper {
         return entity;
     }
 
-    public static User toUserModel(UserEntity entity) {
+    public static User toUser(UserEntity entity) {
         return User.builder()
-                        .userId(new PhoneNumber(entity.getUserId()))
-                        .name(entity.getName())
-                        .passwordHash(entity.getPasswordHash())
-                        .status(UserStatus.valueOf(entity.getStatus()))
-                        .verified(entity.isVerified())
-                        .createdAt(entity.getCreatedAt())
-                        .build();
+                .userId(new PhoneNumber(entity.getUserId()))
+                .name(entity.getName())
+                .passwordHash(entity.getPasswordHash())
+                .status(UserStatus.valueOf(entity.getStatus()))
+                .verified(entity.isVerified())
+                .createdAt(entity.getCreatedAt())
+                .build();
     }
 
-    public static Account toAccountModel(AccountEntity entity) {
+    // account model
+    public static Account toAccount(AccountEntity entity) {
         return Account.builder()
                 .accountId(entity.getAccountId())
                 .accountName(new AccountName(entity.getAccountName()))
                 .adminId(new PhoneNumber(entity.getAdminId()))
+                .markedForDeletionAt(entity.getMarkedForDeletionAt())
                 .status(AccountStatus.valueOf(entity.getStatus()))
                 .createdAt(entity.getCreatedAt())
                 .build();
@@ -43,11 +45,13 @@ public class DomainOrmMapper {
         entity.setAccountId(account.getAccountId());
         entity.setAccountName(account.getAccountName().value());
         entity.setAdminId(account.getAdminId().number());
+        entity.setMarkedForDeletionAt(account.getMarkedForDeletionAt());
         entity.setStatus(account.getStatus().name());
         entity.setCreatedAt(account.getCreatedAt());
         return entity;
     }
 
+    // verification code model
     public static VerificationCode toVerificationCode(VerificationCodeEntity entity) {
         VerificationCode code = new VerificationCode();
         code.setId(entity.getId());
@@ -63,6 +67,73 @@ public class DomainOrmMapper {
         entity.setUserId(code.getUserId().number());
         entity.setCodeHash(code.getCodeHash());
         entity.setCreatedAt(code.getCreatedAt());
+        return entity;
+    }
+
+    // invitation model
+    public static Invitation toInvitation(InvitationEntity entity) {
+        return Invitation.builder()
+                .invitationId(entity.getInvitationId())
+                .accountId(entity.getAccountId())
+                .userId(new PhoneNumber(entity.getUserId()))
+                .invitationStatus(InvitationStatus.valueOf(entity.getInvitationStatus()))
+                .createdAt(entity.getCreatedAt())
+                .build();
+    }
+
+    public static InvitationEntity toInvitationEntity(Invitation invitation) {
+        InvitationEntity entity = new InvitationEntity();
+        if (invitation.getInvitationId() != null) {
+            entity.setInvitationId(invitation.getInvitationId());
+        }
+        entity.setAccountId(invitation.getAccountId());
+        entity.setUserId(invitation.getUserId().number());
+        entity.setInvitationStatus(invitation.getInvitationStatus().name());
+        entity.setCreatedAt(invitation.getCreatedAt());
+        return entity;
+    }
+
+    // accountuser model
+    public static AccountUser toAccountUser(AccountUserEntity entity) {
+        return AccountUser.builder()
+                .account(toAccount(entity.getAccount()))
+                .user(toUser(entity.getUser()))
+                .roles(
+                        entity.getRoles().stream()
+                                .map(DomainOrmMapper::toAccountUserRole)
+                                .toList()
+                )
+                .status(AccountUserStatus.valueOf(entity.getStatus()))
+                .build();
+    }
+
+    public static AccountUserEntity toAccountUserEntity(AccountUser accountUser) {
+        AccountUserEntity entity = new AccountUserEntity();
+        entity.setAccount(toAccountEntity(accountUser.getAccount()));
+        entity.setUser(toUserEntity(accountUser.getUser()));
+        entity.setRoles(
+                accountUser.getRoles().stream()
+                        .map(role -> toAccountUserRolesEntity(role, entity))
+                        .toList()
+        );
+        entity.setStatus(accountUser.getStatus().name());
+        return entity;
+    }
+
+    // accountuserrole model
+    public static AccountUserRole toAccountUserRole(AccountUserRolesEntity entity) {
+        return AccountUserRole.builder()
+                .roleId(entity.getRoleId())
+                .build();
+    }
+
+    public static AccountUserRolesEntity toAccountUserRolesEntity(AccountUserRole accountUserRole, AccountUserEntity accountUserEntity) {
+        AccountUserRolesEntity entity = new AccountUserRolesEntity();
+        if (accountUserRole.getId() != null) {
+            entity.setId(accountUserRole.getId());
+        }
+        entity.setAccountUser(accountUserEntity);
+        entity.setRoleId(accountUserRole.getRoleId());
         return entity;
     }
 }

@@ -20,9 +20,12 @@ public class RoleEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
+    @Column(nullable = false)
     private UUID accountId;
+    @Column(nullable = false)
     private String roleName;
     private String description;
+    @Column(nullable = false)
     private Boolean defaultRole;
     private Instant createdAt;
     @OneToMany(mappedBy = "role")

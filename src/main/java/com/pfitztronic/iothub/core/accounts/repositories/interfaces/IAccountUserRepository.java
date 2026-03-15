@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.UUID;
 
 public interface IAccountUserRepository extends JpaRepository<AccountUserEntity, UUID> {
-    List<AccountUserEntity> findByAccountId(UUID accountId);
+    List<AccountUserEntity> findByAccountAccountId(UUID accountId);
 
-    List<AccountUserEntity> findByUserId(String userId);
+    List<AccountUserEntity> findByUserUserId(String userId);
 }

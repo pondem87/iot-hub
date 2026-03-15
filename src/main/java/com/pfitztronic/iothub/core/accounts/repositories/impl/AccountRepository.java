@@ -21,23 +21,23 @@ public class AccountRepository {
     public Account save(Account account) {
         AccountEntity accountEntity = DomainOrmMapper.toAccountEntity(account);
         AccountEntity savedEntity = repository.save(accountEntity);
-        return DomainOrmMapper.toAccountModel(savedEntity);
+        return DomainOrmMapper.toAccount(savedEntity);
     }
 
     public Account findOneByName(String name) {
         AccountEntity accountEntity = repository.findByAccountNameIgnoreCase(name).orElse(null);
-        return accountEntity != null ? DomainOrmMapper.toAccountModel(accountEntity) : null;
+        return accountEntity != null ? DomainOrmMapper.toAccount(accountEntity) : null;
     }
 
     public Account findOneById(UUID id) {
         AccountEntity accountEntity = repository.findById(id).orElse(null);
-        return accountEntity != null ? DomainOrmMapper.toAccountModel(accountEntity) : null;
+        return accountEntity != null ? DomainOrmMapper.toAccount(accountEntity) : null;
     }
 
     public List<Account> findAllMarkedForDeletion() {
         Instant instant;
         List<AccountEntity> entities = repository.findAllByMarkedForDeletionAtBefore(Instant.now());
-        return entities.stream().map(DomainOrmMapper::toAccountModel).toList();
+        return entities.stream().map(DomainOrmMapper::toAccount).toList();
     }
 
     public long findCountByAdminId(String adminId) {

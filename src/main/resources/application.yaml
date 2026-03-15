@@ -4,13 +4,13 @@ spring:
   datasource:
     core:
       url: jdbc:postgresql://localhost:5432/app_core
-      username: core_user
-      password: core_pass
+      username: core_app
+      password: core_app_password
       driver-class-name: org.postgresql.Driver
     timeseries:
       url: jdbc:postgresql://localhost:5432/app_timeseries
-      username: ts_user
-      password: ts_pass
+      username: ts_app
+      password: ts_app_password
       driver-class-name: org.postgresql.Driver
   flyway:
     enabled: false

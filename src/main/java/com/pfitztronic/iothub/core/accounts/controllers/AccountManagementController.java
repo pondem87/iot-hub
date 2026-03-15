@@ -24,8 +24,8 @@ public class AccountManagementController {
         return this.accountManagementService.createNewAccount(data);
     }
 
-    @PreAuthorize("@authService.verifyAuthedUserIsOwner(#data.userId())")
-    @PostMapping()
+    @PreAuthorize("@authService.verifyAuthedUserId(#data.userId())")
+    @PostMapping("create-for-user")
     public NewAccountResponse createAccountForUser(
             @Valid @RequestBody CreateNewAccountForUserData data
     ) {

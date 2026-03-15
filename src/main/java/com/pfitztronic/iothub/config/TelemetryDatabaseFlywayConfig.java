@@ -9,17 +9,15 @@ import javax.sql.DataSource;
 
 @Configuration
 public class TelemetryDatabaseFlywayConfig {
-    @Bean
+    @Bean(initMethod = "migrate")
     public Flyway timescaleFlyway(
             @Qualifier("timeseriesDataSource") DataSource ds
     ) {
-        Flyway flyway = Flyway.configure()
+         return Flyway.configure()
                 .dataSource(ds)
                 .locations("classpath:db/migration/timeseries")
                 .baselineOnMigrate(true)
                 .load();
 
-        flyway.migrate();
-        return flyway;
     }
 }

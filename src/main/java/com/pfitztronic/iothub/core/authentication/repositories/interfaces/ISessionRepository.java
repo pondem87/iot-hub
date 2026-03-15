@@ -8,4 +8,8 @@ import java.util.UUID;
 
 public interface ISessionRepository extends JpaRepository<SessionEntity, UUID> {
     Optional<SessionEntity> findFirstBySessionIdAndUserIdAndUserAgentAndRevokedAtIsNullOrderByCreatedAtDesc(UUID sessionId, String userId, String userAgent);
+
+    void deleteByUserIdAndUserAgent(String userId, String userAgent);
+
+    void deleteByUserId(String userId);
 }

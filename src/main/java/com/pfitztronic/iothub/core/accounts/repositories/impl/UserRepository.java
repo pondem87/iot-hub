@@ -15,7 +15,7 @@ public class UserRepository {
     public User save(User user) {
         UserEntity userEntity = DomainOrmMapper.toUserEntity(user);
         UserEntity savedEntity = repository.save(userEntity);
-        return DomainOrmMapper.toUserModel(savedEntity);
+        return DomainOrmMapper.toUser(savedEntity);
     }
 
     public User findUserById(String userId) {
@@ -23,6 +23,6 @@ public class UserRepository {
         if (userEntity == null) {
             return null;
         }
-        return DomainOrmMapper.toUserModel(userEntity);
+        return DomainOrmMapper.toUser(userEntity);
     }
 }

@@ -50,6 +50,18 @@ The layers:
     - account_id
     - component_id
     - value
+- threshold
+    - account_id
+    - component_id
+    - threshold_id
+    - threshold_type (enum = UPPER, LOWER)
+    - value
+    - comparison_operator (enum = GT, GTE, LT, LTE)
+- device_access
+    - account_id
+    - device_id
+    - user_id
+    - access_level (enum = READ, CONTROL, ADMIN)
 
 ## Management domain
 - asset
@@ -72,7 +84,21 @@ The layers:
     - success
     - response_info
 - action
+    - account_id
+    - action_id
+    - action_name
+    - description
+    - threshold_id
+    - command_id
 - schedule
+    - account_id
+    - schedule_id
+- schedule_event
+    - schedule_id
+    - action_id
+    - cron_expression
+    - next_run_time
+    - last_run_time
 
 ## Notification domain
 - master_config
@@ -85,13 +111,16 @@ The layers:
     - config_id
     - allow_notifications
 
-## User access domain
+## Authentication domain
 - session
     - session_id (PK)
     - user_id
+    - user_agent
     - created_at
     - expires_at
     - revoked_at
+
+## Authorisation domain
 - role
     - account_id
     - role_id (pk)
@@ -142,17 +171,16 @@ The layers:
     - user_id
     - code_hash
     - created_at
-#### Value objects
-    1. phone_number
-    2. password
-
-## Invite domain
 - invitation
     - invitation_id
     - account_id
     - user_id
     - created_at
-    - status (enum = PENDING, ACCEPTED, DECLINED)
+    - status (enum = PENDING, ACCEPTED, CANCELLED, REVOKED)
+
+#### Value objects
+    1. phone_number
+    2. password
 
 ## Subscriptions domain
 - subscription

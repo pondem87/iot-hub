@@ -3,12 +3,13 @@ package com.pfitztronic.iothub.core.authentication.services.impl;
 import com.pfitztronic.iothub.core.authentication.exceptions.UserAgentSessionNotFoundException;
 import com.pfitztronic.iothub.core.authentication.models.Session;
 import com.pfitztronic.iothub.core.authentication.repositories.impl.SessionRepository;
+import jakarta.transaction.Transactional;
 
 import java.time.Instant;
 import java.util.UUID;
 
 public class SessionManagementService {
-    private SessionRepository sessionRepository;
+    private final SessionRepository sessionRepository;
 
     public SessionManagementService(
             SessionRepository sessionRepository
@@ -43,5 +44,18 @@ public class SessionManagementService {
         );
 
         return sessionRepository.save(session);
+    }
+
+    @Transactional
+    public void revokeSession(String userId, String userAgent) {
+       sessionRepository.deleteByUserIdAndUserAgent(
+                userId,
+                userAgent
+       );
+    }
+
+    @Transactional
+    public void revokeAllSessions(String userId) {
+        sessionRepository.deleteByUserId(userId);
     }
 }

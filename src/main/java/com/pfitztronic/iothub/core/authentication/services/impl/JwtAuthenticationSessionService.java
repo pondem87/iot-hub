@@ -9,6 +9,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SignatureException;
+import jakarta.transaction.Transactional;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
@@ -124,5 +125,15 @@ public class JwtAuthenticationSessionService {
                 userAgent,
                 durationSeconds
         );
+    }
+
+    @Transactional
+    public void revokeCurrentSession(String userId, String userAgent) {
+        sessionManagementService.revokeSession(userId, userAgent);
+    }
+
+    @Transactional
+    public void revokeAllSessions(String userId) {
+        sessionManagementService.revokeAllSessions(userId);
     }
 }

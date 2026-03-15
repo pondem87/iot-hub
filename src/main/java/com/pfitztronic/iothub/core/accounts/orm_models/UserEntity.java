@@ -20,8 +20,11 @@ public class UserEntity {
     private String name;
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
+    @Column(nullable = false)
     private boolean verified;
+    @Column(nullable = false)
     private String passwordHash;
+    @Column(length = 50, nullable = false)
     private String status;
 
     @PrePersist

@@ -20,8 +20,11 @@ public class RolePermissionEntity {
     private UUID id;
     @Column(name = "role_id", nullable = false)
     private UUID roleId;
+    @Column(nullable = false)
     private UUID accountId;
+    @Column(nullable = false)
     private String entity;
+    @Column(nullable = false)
     private String action;
     @ManyToOne
     @JoinColumn(name = "role_id", insertable = false, updatable = false)

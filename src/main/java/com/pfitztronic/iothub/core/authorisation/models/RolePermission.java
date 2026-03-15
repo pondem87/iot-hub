@@ -1,16 +1,13 @@
 package com.pfitztronic.iothub.core.authorisation.models;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.util.UUID;
 
 @Builder
-@Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Getter
 public class RolePermission {
     UUID id;
     UUID roleId;

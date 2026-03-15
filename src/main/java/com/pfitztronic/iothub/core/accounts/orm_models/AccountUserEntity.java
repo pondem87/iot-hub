@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -23,7 +24,9 @@ public class AccountUserEntity {
     @ManyToOne
     @JoinColumn(name="user_id", nullable=false)
     private UserEntity user;
-    private UUID roleId;
+    @OneToMany(mappedBy = "accountUser")
+    private List<AccountUserRolesEntity> roles;
+    @Column(length = 50, nullable = false)
     private String status;
     @Column(nullable = false, updatable = false)
     private java.time.Instant joinedAt;

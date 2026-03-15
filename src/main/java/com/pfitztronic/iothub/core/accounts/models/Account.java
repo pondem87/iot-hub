@@ -1,6 +1,7 @@
 package com.pfitztronic.iothub.core.accounts.models;
 
 import lombok.*;
+import lombok.extern.slf4j.Slf4j;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -8,6 +9,7 @@ import java.util.UUID;
 @Builder
 @AllArgsConstructor
 @Getter
+@Slf4j
 public class Account {
     private UUID accountId;
     private AccountName accountName;
@@ -21,8 +23,8 @@ public class Account {
         return this.status == AccountStatus.ACTIVE;
     }
 
-    public void markForDeletionAt(Instant markForDeletionAt) {
-        this.markedForDeletionAt = markForDeletionAt;
+    public void scheduleDeletion(Instant at) {
+        this.markedForDeletionAt = at;
         this.status = AccountStatus.DISABLED;
     }
 
@@ -38,5 +40,4 @@ public class Account {
     public void disable() {
         this.status = AccountStatus.DISABLED;
     }
-
 }

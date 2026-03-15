@@ -38,7 +38,7 @@ public class CoreDatabaseConfig {
     ) {
         return builder
                 .dataSource(coreDataSource())
-                .packages("com.example.core.entity")
+                .packages("com.pfitztronic.iothub.core")
                 .persistenceUnit("core")
                 .build();
     }

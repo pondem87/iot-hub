@@ -204,7 +204,7 @@ public class AccountManagementService {
         if (account == null) {
             throw new AccountDoesNotExistException("This account does not exist.");
         }
-        account.markForDeletionAt(Instant.now().plus(DELETE_GRACE_PERIOD_DAYS, ChronoUnit.DAYS));
+        account.scheduleDeletion(Instant.now().plus(DELETE_GRACE_PERIOD_DAYS, ChronoUnit.DAYS));
         var savedAccount = accountRepository.save(account);
 
         // publish events

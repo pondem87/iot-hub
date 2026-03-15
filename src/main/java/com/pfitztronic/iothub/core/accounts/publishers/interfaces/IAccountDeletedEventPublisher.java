@@ -4,4 +4,6 @@ import java.util.UUID;
 
 public interface IAccountDeletedEventPublisher {
     public void publishAccountDeletedEvent(UUID accountID);
+    public void subscribe(IAccountDeletedEventHandler handler);
+    public void unsubscribe(IAccountDeletedEventHandler handler);
 }

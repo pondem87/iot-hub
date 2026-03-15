@@ -17,8 +17,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 import java.time.Instant;
-import java.util.Collection;
-import java.util.Set;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -30,12 +29,16 @@ class UserDetailsServiceImplTest {
     private static final String TEST_USER_ID = "+12345678901";
     private static final String TEST_NAME = "Test User";
     private static final String TEST_PASSWORD_HASH = "hashedPassword123";
+    private static final List<UUID> TEST_USER_ROLES = new ArrayList<UUID>();
 
     @Mock
     private UserManagementService userManagementService;
 
     @Mock
     private IUserPermissionsService userPermissionsService;
+    @Mock
+    private AccountUserManagementService accountUserManagementService;
+
 
     private UserDetailsServiceImpl userDetailsService;
 
@@ -43,7 +46,8 @@ class UserDetailsServiceImplTest {
     void setUp() {
         userDetailsService = new UserDetailsServiceImpl(
                 userManagementService,
-                userPermissionsService
+                userPermissionsService,
+                accountUserManagementService
         );
     }
 
@@ -72,7 +76,8 @@ class UserDetailsServiceImplTest {
             );
 
             when(userManagementService.getUserById(TEST_USER_ID)).thenReturn(user);
-            when(userPermissionsService.getUserPermissions(TEST_USER_ID)).thenReturn(permissions);
+            when(accountUserManagementService.getRolesForUser(TEST_USER_ID)).thenReturn(TEST_USER_ROLES);
+            when(userPermissionsService.getUserPermissions(TEST_USER_ROLES)).thenReturn(permissions);
 
             // when
             UserDetails result = userDetailsService.loadUserByUsername(TEST_USER_ID);
@@ -85,7 +90,7 @@ class UserDetailsServiceImplTest {
             assertTrue(result.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_USER")));
 
             verify(userManagementService, times(1)).getUserById(TEST_USER_ID);
-            verify(userPermissionsService, times(1)).getUserPermissions(TEST_USER_ID);
+            verify(userPermissionsService, times(1)).getUserPermissions(TEST_USER_ROLES);
         }
 
         @Test
@@ -96,7 +101,8 @@ class UserDetailsServiceImplTest {
             Collection<GrantedAuthority> permissions = Set.of();
 
             when(userManagementService.getUserById(TEST_USER_ID)).thenReturn(user);
-            when(userPermissionsService.getUserPermissions(TEST_USER_ID)).thenReturn(permissions);
+            when(accountUserManagementService.getRolesForUser(TEST_USER_ID)).thenReturn(TEST_USER_ROLES);
+            when(userPermissionsService.getUserPermissions(TEST_USER_ROLES)).thenReturn(permissions);
 
             // when
             UserDetails result = userDetailsService.loadUserByUsername(TEST_USER_ID);
@@ -118,7 +124,8 @@ class UserDetailsServiceImplTest {
             );
 
             when(userManagementService.getUserById(TEST_USER_ID)).thenReturn(user);
-            when(userPermissionsService.getUserPermissions(TEST_USER_ID)).thenReturn(permissions);
+            when(accountUserManagementService.getRolesForUser(TEST_USER_ID)).thenReturn(TEST_USER_ROLES);
+            when(userPermissionsService.getUserPermissions(TEST_USER_ROLES)).thenReturn(permissions);
 
             // when
             UserDetails result = userDetailsService.loadUserByUsername(TEST_USER_ID);
@@ -136,7 +143,8 @@ class UserDetailsServiceImplTest {
             Collection<GrantedAuthority> permissions = Set.of();
 
             when(userManagementService.getUserById(TEST_USER_ID)).thenReturn(user);
-            when(userPermissionsService.getUserPermissions(TEST_USER_ID)).thenReturn(permissions);
+            when(accountUserManagementService.getRolesForUser(TEST_USER_ID)).thenReturn(TEST_USER_ROLES);
+            when(userPermissionsService.getUserPermissions(TEST_USER_ROLES)).thenReturn(permissions);
 
             // when
             UserDetails result = userDetailsService.loadUserByUsername(TEST_USER_ID);
@@ -195,7 +203,8 @@ class UserDetailsServiceImplTest {
             Collection<GrantedAuthority> permissions = Set.of();
 
             when(userManagementService.getUserById(TEST_USER_ID)).thenReturn(user);
-            when(userPermissionsService.getUserPermissions(TEST_USER_ID)).thenReturn(permissions);
+            when(accountUserManagementService.getRolesForUser(TEST_USER_ID)).thenReturn(TEST_USER_ROLES);
+            when(userPermissionsService.getUserPermissions(TEST_USER_ROLES)).thenReturn(permissions);
 
             // when
             UserDetails result = userDetailsService.loadUserByUsername(TEST_USER_ID);
@@ -214,7 +223,8 @@ class UserDetailsServiceImplTest {
             Collection<GrantedAuthority> permissions = Set.of();
 
             when(userManagementService.getUserById(TEST_USER_ID)).thenReturn(user);
-            when(userPermissionsService.getUserPermissions(TEST_USER_ID)).thenReturn(permissions);
+            when(accountUserManagementService.getRolesForUser(TEST_USER_ID)).thenReturn(TEST_USER_ROLES);
+            when(userPermissionsService.getUserPermissions(TEST_USER_ROLES)).thenReturn(permissions);
 
             // when
             UserDetails result = userDetailsService.loadUserByUsername(TEST_USER_ID);
@@ -233,7 +243,8 @@ class UserDetailsServiceImplTest {
             Collection<GrantedAuthority> permissions = Set.of();
 
             when(userManagementService.getUserById(TEST_USER_ID)).thenReturn(user);
-            when(userPermissionsService.getUserPermissions(TEST_USER_ID)).thenReturn(permissions);
+            when(accountUserManagementService.getRolesForUser(TEST_USER_ID)).thenReturn(TEST_USER_ROLES);
+            when(userPermissionsService.getUserPermissions(TEST_USER_ROLES)).thenReturn(permissions);
 
             // when
             UserDetails result = userDetailsService.loadUserByUsername(TEST_USER_ID);
@@ -259,13 +270,18 @@ class UserDetailsServiceImplTest {
             User user1 = createTestUser(userId1, UserStatus.ACTIVE);
             User user2 = createTestUser(userId2, UserStatus.ACTIVE);
 
+            List<UUID> user1_roles = List.of(UUID.randomUUID());
+            List<UUID> user2_roles = List.of(UUID.randomUUID());
+
             Collection<GrantedAuthority> permissions1 = Set.of(new SimpleGrantedAuthority("ROLE_USER"));
             Collection<GrantedAuthority> permissions2 = Set.of(new SimpleGrantedAuthority("ROLE_ADMIN"));
 
             when(userManagementService.getUserById(userId1)).thenReturn(user1);
             when(userManagementService.getUserById(userId2)).thenReturn(user2);
-            when(userPermissionsService.getUserPermissions(userId1)).thenReturn(permissions1);
-            when(userPermissionsService.getUserPermissions(userId2)).thenReturn(permissions2);
+            when(accountUserManagementService.getRolesForUser(userId1)).thenReturn(user1_roles);
+            when(accountUserManagementService.getRolesForUser(userId2)).thenReturn(user2_roles);
+            when(userPermissionsService.getUserPermissions(user1_roles)).thenReturn(permissions1);
+            when(userPermissionsService.getUserPermissions(user2_roles)).thenReturn(permissions2);
 
             // when
             UserDetails result1 = userDetailsService.loadUserByUsername(userId1);
@@ -292,7 +308,8 @@ class UserDetailsServiceImplTest {
             Collection<GrantedAuthority> permissions = Set.of();
 
             when(userManagementService.getUserById(TEST_USER_ID)).thenReturn(user);
-            when(userPermissionsService.getUserPermissions(TEST_USER_ID)).thenReturn(permissions);
+            when(accountUserManagementService.getRolesForUser(TEST_USER_ID)).thenReturn(TEST_USER_ROLES);
+            when(userPermissionsService.getUserPermissions(TEST_USER_ROLES)).thenReturn(permissions);
 
             // when
             userDetailsService.loadUserByUsername(TEST_USER_ID);
@@ -300,7 +317,7 @@ class UserDetailsServiceImplTest {
             // then
             var inOrder = inOrder(userManagementService, userPermissionsService);
             inOrder.verify(userManagementService).getUserById(TEST_USER_ID);
-            inOrder.verify(userPermissionsService).getUserPermissions(TEST_USER_ID);
+            inOrder.verify(userPermissionsService).getUserPermissions(TEST_USER_ROLES);
         }
 
         @Test
@@ -311,14 +328,15 @@ class UserDetailsServiceImplTest {
             Collection<GrantedAuthority> permissions = Set.of();
 
             when(userManagementService.getUserById(TEST_USER_ID)).thenReturn(user);
-            when(userPermissionsService.getUserPermissions(TEST_USER_ID)).thenReturn(permissions);
+            when(accountUserManagementService.getRolesForUser(TEST_USER_ID)).thenReturn(TEST_USER_ROLES);
+            when(userPermissionsService.getUserPermissions(TEST_USER_ROLES)).thenReturn(permissions);
 
             // when
             userDetailsService.loadUserByUsername(TEST_USER_ID);
 
             // then
             verify(userManagementService, times(1)).getUserById(TEST_USER_ID);
-            verify(userPermissionsService, times(1)).getUserPermissions(TEST_USER_ID);
+            verify(userPermissionsService, times(1)).getUserPermissions(TEST_USER_ROLES);
         }
     }
 }

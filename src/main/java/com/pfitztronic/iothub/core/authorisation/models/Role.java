@@ -1,24 +1,35 @@
 package com.pfitztronic.iothub.core.authorisation.models;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 @Builder
-@Data
-@NoArgsConstructor
 @AllArgsConstructor
+@Getter
 public class Role {
     UUID id;
-    UUID roleId;
+    UUID accountId;
     String roleName;
     String description;
-    Boolean defaultRole;
+    @Builder.Default
+    Boolean defaultRole = false;
     Instant createdAt;
-    List<RolePermission> rolePermission;
+    @Builder.Default
+    List<RolePermission> rolePermissions = new ArrayList<>();
+
+    public void makeDefault() {
+        if (id != null) {
+            throw new IllegalStateException("Cannot make persisted role default");
+        }
+
+        this.defaultRole = true;
+    }
+
+    public void addRolePermissions(List<RolePermission> rolePermissionsToAdd) {
+       rolePermissions.addAll(rolePermissionsToAdd);
+    }
 }

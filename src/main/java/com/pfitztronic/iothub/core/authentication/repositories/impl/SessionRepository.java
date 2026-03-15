@@ -36,4 +36,12 @@ public class SessionRepository {
         SessionEntity savedEntity = baseRepository.save(entity);
         return ModelToOrmMapper.toSession(savedEntity);
     }
+
+    public void deleteByUserIdAndUserAgent(String userId, String userAgent) {
+        baseRepository.deleteByUserIdAndUserAgent(userId, userAgent);
+    }
+
+    public void deleteByUserId(String userId) {
+        baseRepository.deleteByUserId(userId);
+    }
 }
