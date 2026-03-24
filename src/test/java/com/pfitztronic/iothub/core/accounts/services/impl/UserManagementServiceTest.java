@@ -1,8 +1,6 @@
 package com.pfitztronic.iothub.core.accounts.services.impl;
 
-import com.pfitztronic.iothub.core.accounts.exceptions.InvalidPasswordFormatException;
-import com.pfitztronic.iothub.core.accounts.exceptions.InvalidUserIdentityException;
-import com.pfitztronic.iothub.core.accounts.exceptions.UserAlreadyExistsException;
+import com.pfitztronic.iothub.core.accounts.exceptions.*;
 import com.pfitztronic.iothub.core.accounts.models.PhoneNumber;
 import com.pfitztronic.iothub.core.accounts.models.User;
 import com.pfitztronic.iothub.core.accounts.models.UserStatus;
@@ -11,8 +9,6 @@ import com.pfitztronic.iothub.core.accounts.publishers.interfaces.IAuditedEventP
 import com.pfitztronic.iothub.core.accounts.publishers.interfaces.IUserCreatedEventPublisher;
 import com.pfitztronic.iothub.core.accounts.publishers.interfaces.IUserNotificationPublisher;
 import com.pfitztronic.iothub.core.accounts.repositories.impl.UserRepository;
-import com.pfitztronic.iothub.core.accounts.repositories.impl.VerificationCodeRepository;
-import com.pfitztronic.iothub.core.accounts.util.CodeGenerator;
 import com.pfitztronic.iothub.core.accounts.util.PasswordEncoderProxy;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -24,9 +20,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
-import java.util.UUID;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -36,11 +33,11 @@ class UserManagementServiceTest {
     @Mock
     private UserRepository userRepository;
     @Mock
-    private VerificationCodeRepository verificationCodeRepository;
+    private VerificationCodeService verificationCodeService;
+    @Mock
+    private PasswordResetCodeService passwordResetCodeService;
     @Mock
     private PasswordEncoderProxy passwordEncoder;
-    @Mock
-    private CodeGenerator codeGenerator;
     @Mock
     private IUserCreatedEventPublisher userCreatedEventPublisher;
     @Mock
@@ -50,6 +47,30 @@ class UserManagementServiceTest {
 
     private UserManagementService userManagementService;
 
+    // Common test data for nested classes
+    private PhoneNumber testUserId;
+    private User activeVerifiedUser;
+
+    @BeforeEach
+    void setUp() {
+        userManagementService = new UserManagementService(
+                userRepository,
+                verificationCodeService,
+                passwordResetCodeService,
+                passwordEncoder,
+                auditedEventPublisher,
+                userNotificationPublisher,
+                userCreatedEventPublisher
+        );
+        testUserId = new PhoneNumber("+12345678901");
+        activeVerifiedUser = User.builder()
+                .userId(testUserId)
+                .name("John")
+                .passwordHash("hashed")
+                .verified(true)
+                .status(UserStatus.ACTIVE)
+                .build();
+    }
 
     @Nested
     @DisplayName("Create New User Tests")
@@ -61,19 +82,6 @@ class UserManagementServiceTest {
         private String passwordHash;
         private String generatedCode;
         private String generatedCodeHash;
-
-        @BeforeEach
-        public void setUp() {
-            userManagementService = new UserManagementService(
-                    userRepository,
-                    verificationCodeRepository,
-                    codeGenerator,
-                    passwordEncoder,
-                    auditedEventPublisher,
-                    userNotificationPublisher,
-                    userCreatedEventPublisher
-            );
-        }
 
         @Test
         void createNewUserSuccess() {
@@ -88,22 +96,19 @@ class UserManagementServiceTest {
 
             // mocks
             when(passwordEncoder.encode(password)).thenReturn(passwordHash);
-            when(passwordEncoder.encode(generatedCode)).thenReturn(generatedCodeHash);
-            when(codeGenerator.generateCode()).thenReturn(generatedCode);
+            when(verificationCodeService.generateVerificationCode(any(PhoneNumber.class))).thenReturn(
+                    VerificationCode.builder()
+                            .userId(new PhoneNumber(userId))
+                            .codeHash(generatedCodeHash)
+                            .createdAt(Instant.now())
+                            .build()
+            );
 
             when(userRepository.save(any(User.class))).thenReturn(
                     User.builder()
                             .userId(new PhoneNumber(userId))
                             .name(name)
                             .passwordHash(passwordHash)
-                            .createdAt(Instant.now())
-                            .build()
-            );
-            when(verificationCodeRepository.save(any(VerificationCode.class))).thenReturn(
-                    VerificationCode.builder()
-                            .id(UUID.randomUUID())
-                            .userId(new PhoneNumber(userId))
-                            .codeHash(generatedCodeHash)
                             .createdAt(Instant.now())
                             .build()
             );
@@ -119,22 +124,17 @@ class UserManagementServiceTest {
             assertEquals(UserStatus.ACTIVE, newUser.getStatus());
             // capture call arguments
             ArgumentCaptor<User> unsavedUserCaptor = ArgumentCaptor.forClass(User.class);
-            ArgumentCaptor<VerificationCode> unsavedVerificationCodeCaptor = ArgumentCaptor.forClass(VerificationCode.class);
             verify(userRepository, times(1)).save(unsavedUserCaptor.capture());
-            verify(verificationCodeRepository, times(1)).save(unsavedVerificationCodeCaptor.capture());
             // verify captor arguments
-            // check unsavedUser
             assertEquals(userId, unsavedUserCaptor.getValue().getUserId().number());
             assertEquals(name, unsavedUserCaptor.getValue().getName());
             assertEquals(passwordHash, unsavedUserCaptor.getValue().getPasswordHash());
-            // check unsavedVerificationCode
-            assertEquals(userId, unsavedVerificationCodeCaptor.getValue().getUserId().number());
-            assertEquals(generatedCodeHash, unsavedVerificationCodeCaptor.getValue().getCodeHash());
             verify(passwordEncoder, times(1)).encode(password);
+            verify(verificationCodeService, times(1)).generateVerificationCode(new PhoneNumber(userId));
             verify(userCreatedEventPublisher, times(1)).publishUserCreatedEvent(newUser.getUserId().number());
             verify(userNotificationPublisher, times(1)).publishUserNotificationEvent(
                     newUser.getUserId().number(),
-                    "Your account verification code is: " + generatedCode
+                    "Your account has been successfully created."
             );
         }
 
@@ -151,12 +151,12 @@ class UserManagementServiceTest {
 
             // mocks
             when(userRepository.findUserById(userId)).thenReturn(
-                    User.builder()
+                    Optional.of(User.builder()
                             .userId(new PhoneNumber(userId))
                             .name(name)
                             .passwordHash(passwordHash)
                             .createdAt(Instant.now())
-                            .build()
+                            .build())
             );
 
             // when
@@ -195,8 +195,144 @@ class UserManagementServiceTest {
             Exception exception = assertThrows(InvalidPasswordFormatException.class, () -> {
                 userManagementService.createNewUser(userId, name, password);
             });
-
         }
     }
 
+    @Nested
+    @DisplayName("Change user details")
+    class ChangeDetailsTests {
+        @Test
+        @DisplayName("Should update name when user is active and verified")
+        void changeDetailsSuccess() {
+            when(userRepository.findUserById(testUserId.number()))
+                    .thenReturn(Optional.of(activeVerifiedUser));
+            when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            User updated = userManagementService.changeUserDetails(testUserId.number(), "Jane");
+
+            assertEquals("Jane", updated.getName());
+            verify(userRepository, times(1)).save(any(User.class));
+        }
+
+        @Test
+        @DisplayName("Should fail when user not verified")
+        void changeDetailsNotVerified() {
+            User notVerified = User.builder()
+                    .userId(testUserId)
+                    .name("John")
+                    .passwordHash("hashed")
+                    .verified(false)
+                    .status(UserStatus.ACTIVE)
+                    .build();
+
+            when(userRepository.findUserById(testUserId.number()))
+                    .thenReturn(Optional.of(notVerified));
+
+            assertThrows(UserAccountNotVerifiedException.class,
+                    () -> userManagementService.changeUserDetails(testUserId.number(), "Jane"));
+            verify(userRepository, never()).save(any());
+        }
+    }
+
+    @Nested
+    @DisplayName("Change password")
+    class ChangePasswordTests {
+        @Test
+        @DisplayName("Should update password when old matches")
+        void changePasswordSuccess() {
+            when(userRepository.findUserById(testUserId.number()))
+                    .thenReturn(Optional.of(activeVerifiedUser));
+            when(passwordEncoder.matches("oldPass123!", "hashed")).thenReturn(true);
+            when(passwordEncoder.encode("newPass123!")).thenReturn("newHash");
+
+            userManagementService.changePassword(testUserId.number(), "oldPass123!", "newPass123!");
+
+            verify(userRepository, times(1)).save(any(User.class));
+            verify(userNotificationPublisher, times(1))
+                    .publishUserNotificationEvent(eq(testUserId.number()), anyString());
+        }
+
+        @Test
+        @DisplayName("Should fail when old password is incorrect")
+        void changePasswordInvalidOld() {
+            when(userRepository.findUserById(testUserId.number()))
+                    .thenReturn(Optional.of(activeVerifiedUser));
+            when(passwordEncoder.matches("old", "hashed")).thenReturn(false);
+
+            assertThrows(InvalidOldPasswordException.class,
+                    () -> userManagementService.changePassword(testUserId.number(), "old", "newPass123"));
+            verify(userRepository, never()).save(any());
+        }
+    }
+
+    @Nested
+    @DisplayName("Password reset code")
+    class PasswordResetTests {
+        @Test
+        @DisplayName("Should request password reset code for active user")
+        void requestResetCodeSuccess() {
+            when(userRepository.findUserById(testUserId.number()))
+                    .thenReturn(Optional.of(activeVerifiedUser));
+
+            userManagementService.requestPasswordResetCode(testUserId.number());
+
+            verify(passwordResetCodeService, times(1))
+                    .generateCode(eq(testUserId));
+        }
+
+        @Test
+        @DisplayName("Should change password using valid reset code")
+        void changePasswordWithResetCodeSuccess() {
+            when(userRepository.findUserById(testUserId.number()))
+                    .thenReturn(Optional.of(activeVerifiedUser));
+            when(passwordEncoder.encode("newPass123!")).thenReturn("newHash");
+
+            userManagementService.changePasswordWithResetCode(testUserId.number(), "123456", "newPass123!");
+
+            verify(passwordResetCodeService, times(1))
+                    .verifyCode(eq(testUserId), eq("123456"));
+            verify(userRepository, times(1)).save(any(User.class));
+            verify(userNotificationPublisher, times(1))
+                    .publishUserNotificationEvent(eq(testUserId.number()), anyString());
+        }
+    }
+
+    @Nested
+    @DisplayName("Verify user account")
+    class VerifyUserTests {
+        @Test
+        @DisplayName("Should verify user using valid code")
+        void verifyUserSuccess() {
+            User pending = User.builder()
+                    .userId(testUserId)
+                    .name("John")
+                    .passwordHash("hashed")
+                    .verified(false)
+                    .status(UserStatus.ACTIVE)
+                    .build();
+
+            when(userRepository.findUserById(testUserId.number()))
+                    .thenReturn(Optional.of(pending));
+            when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            userManagementService.verifyUserAccount(testUserId.number(), "999999");
+
+            verify(verificationCodeService, times(1))
+                    .verifyCode(eq(testUserId), eq("999999"));
+            verify(userRepository, times(1)).save(any(User.class));
+            verify(userNotificationPublisher, times(1))
+                    .publishUserNotificationEvent(eq(testUserId.number()), anyString());
+        }
+
+        @Test
+        @DisplayName("Should fail to resend verification for verified user")
+        void resendVerificationAlreadyVerified() {
+            when(userRepository.findUserById(testUserId.number()))
+                    .thenReturn(Optional.of(activeVerifiedUser));
+
+            assertThrows(IllegalUserAccountStateException.class,
+                    () -> userManagementService.resendVerificationCode(testUserId.number()));
+            verify(verificationCodeService, never()).generateVerificationCode(any());
+        }
+    }
 }

@@ -13,7 +13,7 @@ public class DomainOrmMapper {
         entity.setPasswordHash(user.getPasswordHash());
         entity.setStatus(user.getStatus().name());
         entity.setVerified(user.isVerified());
-        entity.setCreatedAt(entity.getCreatedAt());
+        entity.setCreatedAt(user.getCreatedAt());
         return entity;
     }
 
@@ -58,6 +58,7 @@ public class DomainOrmMapper {
         code.setUserId(new PhoneNumber(entity.getUserId()));
         code.setCodeHash(entity.getCodeHash());
         code.setCreatedAt(entity.getCreatedAt());
+        code.setExpiresAt(entity.getExpiresAt());
         return code;
     }
 
@@ -66,6 +67,7 @@ public class DomainOrmMapper {
         entity.setId(code.getId());
         entity.setUserId(code.getUserId().number());
         entity.setCodeHash(code.getCodeHash());
+        entity.setExpiresAt(code.getExpiresAt());
         entity.setCreatedAt(code.getCreatedAt());
         return entity;
     }
@@ -134,6 +136,29 @@ public class DomainOrmMapper {
         }
         entity.setAccountUser(accountUserEntity);
         entity.setRoleId(accountUserRole.getRoleId());
+        return entity;
+    }
+
+    // reset code model
+    public static PasswordResetCode toPasswordResetCode(PasswordResetCodeEntity entity) {
+        return PasswordResetCode.builder()
+                .id(entity.getId())
+                .userId(new PhoneNumber(entity.getUserId()))
+                .codeHash(entity.getCodeHash())
+                .expiresAt(entity.getExpiresAt())
+                .createdAt(entity.getCreatedAt())
+                .build();
+    }
+
+    public static PasswordResetCodeEntity toPasswordResetCodeEntity(PasswordResetCode code) {
+        PasswordResetCodeEntity entity = new PasswordResetCodeEntity();
+        if (code.getId() != null) {
+            entity.setId(code.getId());
+        }
+        entity.setUserId(code.getUserId().number());
+        entity.setCodeHash(code.getCodeHash());
+        entity.setExpiresAt(code.getExpiresAt());
+        entity.setCreatedAt(code.getCreatedAt());
         return entity;
     }
 }

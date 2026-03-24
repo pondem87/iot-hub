@@ -12,16 +12,17 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name="verification_codes")
-public class VerificationCodeEntity {
+@Table(name="password_reset_codes")
+public class PasswordResetCodeEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    UUID id;
+    public UUID id;
     @Column(length = 50, nullable = false)
-    String userId;
+    private String userId;
     @Column(nullable = false)
-    String codeHash;
+    private String codeHash;
     Instant createdAt;
+    @Column(nullable = false)
     Instant expiresAt;
 
     @PrePersist

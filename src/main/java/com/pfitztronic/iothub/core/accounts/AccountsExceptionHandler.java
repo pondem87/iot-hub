@@ -12,6 +12,9 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class AccountsExceptionHandler {
+    private static final String PASSWORD_VALIDATION_ERROR_STRING = "PASSWORD_VALIDATION_ERROR";
+    private static final String ACCOUNT_NAME_DUPLICATION_ERROR_STRING = "ACCOUNT_NAME_DUPLICATION_ERROR";
+    private static final String ACCOUNT_POLICY_VIOLATION_ERROR_STRING = "ACCOUNT_POLICY_VIOLATION_ERROR";
 
     @ExceptionHandler(InvalidPasswordFormatException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -21,7 +24,7 @@ public class AccountsExceptionHandler {
 
         errors.put("password", ex.getMessage());
 
-        return new ApiErrorResponse("PASSWORD_VALIDATION_ERROR", errors);
+        return new ApiErrorResponse(PASSWORD_VALIDATION_ERROR_STRING, errors);
     }
 
     @ExceptionHandler(AccountNameAlreadyExistsException.class)
@@ -32,13 +35,21 @@ public class AccountsExceptionHandler {
 
         errors.put("account_name", ex.getMessage());
 
-        return new ApiErrorResponse("ACCOUNT_NAME_DUPLICATION_ERROR", errors);
+        return new ApiErrorResponse(ACCOUNT_NAME_DUPLICATION_ERROR_STRING, errors);
     }
 
     @ExceptionHandler({
             AccountCreationLimitExceededException.class,
             UserAlreadyExistsException.class,
-            InvalidUserIdentityException.class
+            InvalidUserIdentityException.class,
+            UserAccountNotFoundException.class,
+            AccountNotActiveException.class,
+            UserAccountNotVerifiedException.class,
+            IllegalUserAccountStateException.class,
+            InvalidOldPasswordException.class,
+            PasswordResetCodeNotFoundException.class,
+            PasswordResetCodeExpiredException.class,
+            InvalidPasswordResetCodeException.class
     })
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiErrorResponse handleAccountsPolicyException(RuntimeException ex) {
@@ -47,6 +58,6 @@ public class AccountsExceptionHandler {
 
         errors.put("message", ex.getMessage());
 
-        return new ApiErrorResponse("ACCOUNT_POLICY_VIOLATION_ERROR", errors);
+        return new ApiErrorResponse(ACCOUNT_POLICY_VIOLATION_ERROR_STRING, errors);
     }
 }

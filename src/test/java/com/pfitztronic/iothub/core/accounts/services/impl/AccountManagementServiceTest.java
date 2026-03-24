@@ -9,6 +9,7 @@ import com.pfitztronic.iothub.core.accounts.models.PhoneNumber;
 import com.pfitztronic.iothub.core.accounts.models.User;
 import com.pfitztronic.iothub.core.accounts.publishers.interfaces.*;
 import com.pfitztronic.iothub.core.accounts.repositories.impl.AccountRepository;
+import com.pfitztronic.iothub.core.accounts.services.AccountsConfigProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -41,6 +42,8 @@ class AccountManagementServiceTest {
     private IAuditedEventPublisher auditedEventPublisher;
     @Mock
     private IAccountDeletedEventPublisher accountDeletedEventPublisher;
+    @Mock
+    private AccountsConfigProperties accountsConfigProps;
 
     private AccountManagementService accountManagementService;
 
@@ -59,7 +62,8 @@ class AccountManagementServiceTest {
                     accountCreatedEventPublisher,
                     accountStatusChangedEventPublisher,
                     auditedEventPublisher,
-                    accountDeletedEventPublisher
+                    accountDeletedEventPublisher,
+                    accountsConfigProps
             );
         }
 

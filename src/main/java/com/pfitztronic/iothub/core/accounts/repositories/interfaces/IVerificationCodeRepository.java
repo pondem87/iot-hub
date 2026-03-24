@@ -8,4 +8,6 @@ import java.util.UUID;
 
 public interface IVerificationCodeRepository extends JpaRepository<VerificationCodeEntity, UUID> {
     public Optional<VerificationCodeEntity> findTopByUserIdOrderByCreatedAtDesc(String userId);
+
+    void deleteByUserId(String userId);
 }

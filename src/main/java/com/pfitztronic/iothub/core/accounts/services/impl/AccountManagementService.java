@@ -1,21 +1,20 @@
 package com.pfitztronic.iothub.core.accounts.services.impl;
 import com.pfitztronic.iothub.core.accounts.dto.CreateNewAccountData;
 import com.pfitztronic.iothub.core.accounts.dto.NewAccountResponse;
-import com.pfitztronic.iothub.core.accounts.exceptions.AccountCreationLimitExceededException;
-import com.pfitztronic.iothub.core.accounts.exceptions.AccountDoesNotExistException;
-import com.pfitztronic.iothub.core.accounts.exceptions.AccountNameAlreadyExistsException;
-import com.pfitztronic.iothub.core.accounts.exceptions.InvalidAccountIdentifierException;
+import com.pfitztronic.iothub.core.accounts.exceptions.*;
 import com.pfitztronic.iothub.core.accounts.models.Account;
 import com.pfitztronic.iothub.core.accounts.models.AccountName;
 import com.pfitztronic.iothub.core.accounts.models.AccountStatus;
 import com.pfitztronic.iothub.core.accounts.models.User;
 import com.pfitztronic.iothub.core.accounts.publishers.interfaces.*;
 import com.pfitztronic.iothub.core.accounts.repositories.impl.AccountRepository;
+import com.pfitztronic.iothub.core.accounts.services.AccountsConfigProperties;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -28,6 +27,7 @@ public class AccountManagementService {
     private final IAuditedEventPublisher auditedEventPublisher;
     private final IAccountStatusChangedEventPublisher accountStatusChangedEventPublisher;
     private final IAccountDeletedEventPublisher accountDeletedEventPublisher;
+    private final AccountsConfigProperties accountsConfigProps;
 
     public AccountManagementService(
             AccountRepository accountRepository,
@@ -36,7 +36,8 @@ public class AccountManagementService {
             IAccountCreatedEventPublisher accountCreatedEventPublisher,
             IAccountStatusChangedEventPublisher accountStatusChangedEventPublisher,
             IAuditedEventPublisher auditedEventPublisher,
-            IAccountDeletedEventPublisher accountDeletedEventPublisher
+            IAccountDeletedEventPublisher accountDeletedEventPublisher,
+            AccountsConfigProperties accountsConfigProps
     ) {
         this.accountRepository = accountRepository;
         this.userManagementService = userManagementService;
@@ -45,6 +46,7 @@ public class AccountManagementService {
         this.accountStatusChangedEventPublisher = accountStatusChangedEventPublisher;
         this.auditedEventPublisher = auditedEventPublisher;
         this.accountDeletedEventPublisher = accountDeletedEventPublisher;
+        this.accountsConfigProps = accountsConfigProps;
     }
 
     public NewAccountResponse createNewAccount(CreateNewAccountData data) {
@@ -61,8 +63,11 @@ public class AccountManagementService {
     }
 
     public NewAccountResponse createAccountForUser(String userId, String accountName) {
-        User user = this.userManagementService.getUserById(userId);
-        return createAccount(user, accountName);
+        Optional<User> user = this.userManagementService.getUserById(userId);
+        if (user.isEmpty()) {
+            throw new InvalidUserIdentityException("Cannot create account for this user.");
+        }
+        return createAccount(user.get(), accountName);
     }
 
     private NewAccountResponse createAccount(User user, String accountName) {
@@ -204,7 +209,7 @@ public class AccountManagementService {
         if (account == null) {
             throw new AccountDoesNotExistException("This account does not exist.");
         }
-        account.scheduleDeletion(Instant.now().plus(DELETE_GRACE_PERIOD_DAYS, ChronoUnit.DAYS));
+        account.scheduleDeletion(Instant.now().plus(accountsConfigProps.deleteAccountDelayDays(), ChronoUnit.DAYS));
         var savedAccount = accountRepository.save(account);
 
         // publish events

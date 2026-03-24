@@ -1,0 +1,1 @@
+alter table verification_codes add column expires_at timestamp without time zone not null;

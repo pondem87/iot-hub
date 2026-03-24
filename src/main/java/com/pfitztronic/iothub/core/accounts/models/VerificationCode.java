@@ -16,4 +16,9 @@ public class VerificationCode {
     PhoneNumber userId;
     String codeHash;
     Instant createdAt;
+    Instant expiresAt;
+
+    public boolean isExpired() {
+        return expiresAt.isBefore(Instant.now());
+    }
 }

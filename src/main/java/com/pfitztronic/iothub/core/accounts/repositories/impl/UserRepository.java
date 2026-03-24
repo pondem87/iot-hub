@@ -5,6 +5,8 @@ import com.pfitztronic.iothub.core.accounts.models.User;
 import com.pfitztronic.iothub.core.accounts.orm_models.UserEntity;
 import com.pfitztronic.iothub.core.accounts.repositories.interfaces.IUserRepository;
 
+import java.util.Optional;
+
 public class UserRepository {
     private final IUserRepository repository;
 
@@ -18,11 +20,8 @@ public class UserRepository {
         return DomainOrmMapper.toUser(savedEntity);
     }
 
-    public User findUserById(String userId) {
-        UserEntity userEntity = repository.findById(userId).orElse(null);
-        if (userEntity == null) {
-            return null;
-        }
-        return DomainOrmMapper.toUser(userEntity);
+    public Optional<User> findUserById(String userId) {
+        return repository.findById(userId)
+                .map(DomainOrmMapper::toUser);
     }
 }

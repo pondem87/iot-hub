@@ -75,7 +75,7 @@ class UserDetailsServiceImplTest {
                     new SimpleGrantedAuthority("ROLE_USER")
             );
 
-            when(userManagementService.getUserById(TEST_USER_ID)).thenReturn(user);
+            when(userManagementService.getUserById(TEST_USER_ID)).thenReturn(Optional.of(user));
             when(accountUserManagementService.getRolesForUser(TEST_USER_ID)).thenReturn(TEST_USER_ROLES);
             when(userPermissionsService.getUserPermissions(TEST_USER_ROLES)).thenReturn(permissions);
 
@@ -100,7 +100,7 @@ class UserDetailsServiceImplTest {
             User user = createTestUser(TEST_USER_ID, UserStatus.ACTIVE);
             Collection<GrantedAuthority> permissions = Set.of();
 
-            when(userManagementService.getUserById(TEST_USER_ID)).thenReturn(user);
+            when(userManagementService.getUserById(TEST_USER_ID)).thenReturn(Optional.of(user));
             when(accountUserManagementService.getRolesForUser(TEST_USER_ID)).thenReturn(TEST_USER_ROLES);
             when(userPermissionsService.getUserPermissions(TEST_USER_ROLES)).thenReturn(permissions);
 
@@ -123,7 +123,7 @@ class UserDetailsServiceImplTest {
                     new SimpleGrantedAuthority("PERMISSION_WRITE")
             );
 
-            when(userManagementService.getUserById(TEST_USER_ID)).thenReturn(user);
+            when(userManagementService.getUserById(TEST_USER_ID)).thenReturn(Optional.of(user));
             when(accountUserManagementService.getRolesForUser(TEST_USER_ID)).thenReturn(TEST_USER_ROLES);
             when(userPermissionsService.getUserPermissions(TEST_USER_ROLES)).thenReturn(permissions);
 
@@ -142,7 +142,7 @@ class UserDetailsServiceImplTest {
             User user = createTestUser(TEST_USER_ID, UserStatus.ACTIVE);
             Collection<GrantedAuthority> permissions = Set.of();
 
-            when(userManagementService.getUserById(TEST_USER_ID)).thenReturn(user);
+            when(userManagementService.getUserById(TEST_USER_ID)).thenReturn(Optional.of(user));
             when(accountUserManagementService.getRolesForUser(TEST_USER_ID)).thenReturn(TEST_USER_ROLES);
             when(userPermissionsService.getUserPermissions(TEST_USER_ROLES)).thenReturn(permissions);
 
@@ -164,7 +164,7 @@ class UserDetailsServiceImplTest {
             // given
             String nonExistentUserId = "+10000000000";
 
-            when(userManagementService.getUserById(nonExistentUserId)).thenReturn(null);
+            when(userManagementService.getUserById(nonExistentUserId)).thenReturn(Optional.empty());
 
             // when & then
             UsernameNotFoundException exception = assertThrows(
@@ -181,7 +181,7 @@ class UserDetailsServiceImplTest {
         @DisplayName("Should not call permissions service when user is not found")
         void loadUserByUsernameDoesNotCallPermissionsServiceWhenUserNotFound() {
             // given
-            when(userManagementService.getUserById(TEST_USER_ID)).thenReturn(null);
+            when(userManagementService.getUserById(TEST_USER_ID)).thenReturn(Optional.empty());
 
             // when & then
             assertThrows(UsernameNotFoundException.class,
@@ -202,7 +202,7 @@ class UserDetailsServiceImplTest {
             User user = createTestUser(TEST_USER_ID, UserStatus.ACTIVE);
             Collection<GrantedAuthority> permissions = Set.of();
 
-            when(userManagementService.getUserById(TEST_USER_ID)).thenReturn(user);
+            when(userManagementService.getUserById(TEST_USER_ID)).thenReturn(Optional.of(user));
             when(accountUserManagementService.getRolesForUser(TEST_USER_ID)).thenReturn(TEST_USER_ROLES);
             when(userPermissionsService.getUserPermissions(TEST_USER_ROLES)).thenReturn(permissions);
 
@@ -222,7 +222,7 @@ class UserDetailsServiceImplTest {
             User user = createTestUser(TEST_USER_ID, UserStatus.SUSPENDED);
             Collection<GrantedAuthority> permissions = Set.of();
 
-            when(userManagementService.getUserById(TEST_USER_ID)).thenReturn(user);
+            when(userManagementService.getUserById(TEST_USER_ID)).thenReturn(Optional.of(user));
             when(accountUserManagementService.getRolesForUser(TEST_USER_ID)).thenReturn(TEST_USER_ROLES);
             when(userPermissionsService.getUserPermissions(TEST_USER_ROLES)).thenReturn(permissions);
 
@@ -242,7 +242,7 @@ class UserDetailsServiceImplTest {
             User user = createTestUser(TEST_USER_ID, UserStatus.DISABLED);
             Collection<GrantedAuthority> permissions = Set.of();
 
-            when(userManagementService.getUserById(TEST_USER_ID)).thenReturn(user);
+            when(userManagementService.getUserById(TEST_USER_ID)).thenReturn(Optional.of(user));
             when(accountUserManagementService.getRolesForUser(TEST_USER_ID)).thenReturn(TEST_USER_ROLES);
             when(userPermissionsService.getUserPermissions(TEST_USER_ROLES)).thenReturn(permissions);
 
@@ -276,8 +276,8 @@ class UserDetailsServiceImplTest {
             Collection<GrantedAuthority> permissions1 = Set.of(new SimpleGrantedAuthority("ROLE_USER"));
             Collection<GrantedAuthority> permissions2 = Set.of(new SimpleGrantedAuthority("ROLE_ADMIN"));
 
-            when(userManagementService.getUserById(userId1)).thenReturn(user1);
-            when(userManagementService.getUserById(userId2)).thenReturn(user2);
+            when(userManagementService.getUserById(userId1)).thenReturn(Optional.of(user1));
+            when(userManagementService.getUserById(userId2)).thenReturn(Optional.of(user2));
             when(accountUserManagementService.getRolesForUser(userId1)).thenReturn(user1_roles);
             when(accountUserManagementService.getRolesForUser(userId2)).thenReturn(user2_roles);
             when(userPermissionsService.getUserPermissions(user1_roles)).thenReturn(permissions1);
@@ -307,7 +307,7 @@ class UserDetailsServiceImplTest {
             User user = createTestUser(TEST_USER_ID, UserStatus.ACTIVE);
             Collection<GrantedAuthority> permissions = Set.of();
 
-            when(userManagementService.getUserById(TEST_USER_ID)).thenReturn(user);
+            when(userManagementService.getUserById(TEST_USER_ID)).thenReturn(Optional.of(user));
             when(accountUserManagementService.getRolesForUser(TEST_USER_ID)).thenReturn(TEST_USER_ROLES);
             when(userPermissionsService.getUserPermissions(TEST_USER_ROLES)).thenReturn(permissions);
 
@@ -327,7 +327,7 @@ class UserDetailsServiceImplTest {
             User user = createTestUser(TEST_USER_ID, UserStatus.ACTIVE);
             Collection<GrantedAuthority> permissions = Set.of();
 
-            when(userManagementService.getUserById(TEST_USER_ID)).thenReturn(user);
+            when(userManagementService.getUserById(TEST_USER_ID)).thenReturn(Optional.of(user));
             when(accountUserManagementService.getRolesForUser(TEST_USER_ID)).thenReturn(TEST_USER_ROLES);
             when(userPermissionsService.getUserPermissions(TEST_USER_ROLES)).thenReturn(permissions);
 

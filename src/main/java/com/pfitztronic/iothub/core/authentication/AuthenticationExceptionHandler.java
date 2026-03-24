@@ -6,6 +6,8 @@ import com.pfitztronic.iothub.core.authentication.exceptions.UserAgentSessionNot
 import com.pfitztronic.iothub.core.authentication.exceptions.UserAgentSessionRevokedException;
 import com.pfitztronic.iothub.config.ApiErrorResponse;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.authorization.AuthorizationDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -15,12 +17,15 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class AuthenticationExceptionHandler {
+    private static final String AUTHENTICATION_ERROR_STRING = "AUTHENTICATION_ERROR";
 
     @ExceptionHandler({
             UserAgentSessionNotFoundException.class,
             UserAgentSessionExpiredException.class,
             UserAgentSessionRevokedException.class,
             UserAgentCredentialsInvalidException.class,
+            AuthorizationDeniedException.class,
+            AuthenticationException.class
     })
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     public ApiErrorResponse handleSessionExceptions(RuntimeException ex) {
@@ -28,7 +33,7 @@ public class AuthenticationExceptionHandler {
 
         errors.put("message", ex.getMessage());
 
-        return new ApiErrorResponse("AUTHENTICATION_ERROR", errors);
+        return new ApiErrorResponse(AUTHENTICATION_ERROR_STRING, errors);
     }
 
 }

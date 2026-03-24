@@ -12,4 +12,8 @@ public class PasswordEncoderProxy {
     public String encode(String rawPassword) {
         return encoder.encode(rawPassword);
     }
+
+    public boolean matches(String raw, String encoded) {
+        return encoder.matches(raw, encoded);
+    }
 }

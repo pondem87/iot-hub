@@ -5,6 +5,7 @@ import com.pfitztronic.iothub.core.authentication.dto.LoginResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -34,7 +35,7 @@ public class AuthenticationService {
             String token = jwtAuthenticationSessionService.generateToken(authentication.getName(), userAgent);
             return new LoginResponse(token);
         } else {
-            throw new RuntimeException("Authentication failed");
+            throw new AuthorizationDeniedException("Authentication failed");
         }
     }
 
@@ -45,7 +46,7 @@ public class AuthenticationService {
             jwtAuthenticationSessionService.revokeCurrentSession(userId, userAgent);
             return "Logged out successfully";
         } else {
-            throw new RuntimeException("No authenticated user found");
+            throw new AuthorizationDeniedException("No authenticated user found");
         }
     }
 
@@ -56,7 +57,7 @@ public class AuthenticationService {
             jwtAuthenticationSessionService.revokeAllSessions(userId);
             return "Logged out from all sessions successfully";
         } else {
-            throw new RuntimeException("No authenticated user found");
+            throw new AuthorizationDeniedException("No authenticated user found");
         }
     }
 }

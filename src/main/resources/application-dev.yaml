@@ -23,6 +23,10 @@ spring:
 jwt:
   secret: c039fa094303399671f60a50102386488f3faa98b0d5478d1ad75dd7b2ddb723
   expiration: 28800
+accounts-config:
+  delete-account-delay-days: ${DELETE_ACCOUNT_DELAY_DAYS:30}
+  verify-account-delay-hours: ${VERIFY_ACCOUNT_DELAY_HOURS:24}
+  password-reset-delay-hours: ${PASSWORD_RESET_DELAY_HOURS:2}
 logging:
   level:
     root: INFO

@@ -3,12 +3,12 @@ spring:
     name: iot-hub
   datasource:
     core:
-      url: jdbc:postgresql://localhost:5432/app_core
+      url: jdbc:postgresql://localhost:5432/iothubcore
       username: core_app
       password: core_app_password
       driver-class-name: org.postgresql.Driver
     timeseries:
-      url: jdbc:postgresql://localhost:5432/app_timeseries
+      url: jdbc:postgresql://localhost:5432/iothubtimeseries
       username: ts_app
       password: ts_app_password
       driver-class-name: org.postgresql.Driver
@@ -18,10 +18,14 @@ spring:
     hibernate:
       ddl-auto: validate
     database: postgresql
-    show-sql: true
-    properties:
-      hibernate:
-        format_sql: true
 jwt:
   secret: ${JWT_SECRET}
   expiration: 28800
+accounts-config:
+  delete-account-delay-days: ${DELETE_ACCOUNT_DELAY_DAYS:30}
+  verify-account-delay-hours: ${VERIFY_ACCOUNT_DELAY_HOURS:24}
+  password-reset-delay-hours: ${PASSWORD_RESET_DELAY_HOURS:2}
+logging:
+  level:
+    root: INFO
+    com.pfitztronic.iothub: INFO
