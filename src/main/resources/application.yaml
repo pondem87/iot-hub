@@ -3,12 +3,12 @@ spring:
     name: iot-hub
   datasource:
     core:
-      url: jdbc:postgresql://localhost:5432/iothubcore
+      jdbc-url: jdbc:postgresql://localhost:5432/iothubcore
       username: core_app
       password: core_app_password
       driver-class-name: org.postgresql.Driver
     timeseries:
-      url: jdbc:postgresql://localhost:5432/iothubtimeseries
+      jdbc-url: jdbc:postgresql://localhost:5432/iothubtimeseries
       username: ts_app
       password: ts_app_password
       driver-class-name: org.postgresql.Driver

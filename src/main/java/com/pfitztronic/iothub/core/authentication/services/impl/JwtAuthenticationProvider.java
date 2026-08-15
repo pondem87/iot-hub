@@ -25,7 +25,8 @@ public class JwtAuthenticationProvider implements AuthenticationProvider {
         JwtAuthenticationCredentials jwtAuthenticationCredentials = (JwtAuthenticationCredentials) authentication.getCredentials();
         assert jwtAuthenticationCredentials != null;
         String userId = jwtAuthenticationSessionService.authenticate(
-                jwtAuthenticationCredentials.token()
+                jwtAuthenticationCredentials.token(),
+                jwtAuthenticationCredentials.userAgent()
         );
         var userDetails = userDetailsService.loadUserByUsername(userId);
         return new JwtAuthentication(userDetails, true);

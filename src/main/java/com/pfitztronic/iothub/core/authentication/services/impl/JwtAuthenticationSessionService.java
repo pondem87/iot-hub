@@ -15,6 +15,7 @@ import javax.crypto.SecretKey;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 public class JwtAuthenticationSessionService {
@@ -33,8 +34,9 @@ public class JwtAuthenticationSessionService {
         this.sessionManagementService = sessionManagementService;
     }
 
-    public String authenticate(String token) {
+    public String authenticate(String token, String requestUserAgent) {
         Map<String, String> sessionInfo = validateAndDecodeToken(token);
+        validateUserAgent(sessionInfo.get(USER_AGENT_CLAIM), requestUserAgent);
         Session session = getSession(
                 sessionInfo.get(SESSION_ID_CLAIM),
                 sessionInfo.get(USER_ID_CLAIM),
@@ -43,6 +45,12 @@ public class JwtAuthenticationSessionService {
 
 
         return validateSession(session);
+    }
+
+    private void validateUserAgent(String tokenUserAgent, String requestUserAgent) {
+        if (!Objects.equals(tokenUserAgent, requestUserAgent)) {
+            throw new UserAgentCredentialsInvalidException("User agent does not match token");
+        }
     }
 
     private Map<String, String> validateAndDecodeToken(String token) {

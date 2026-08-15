@@ -1,5 +1,6 @@
 package com.pfitztronic.iothub.core.accounts.services.impl;
 
+import com.pfitztronic.iothub.core.TestFixtures;
 import com.pfitztronic.iothub.core.accounts.exceptions.InvalidPasswordResetCodeException;
 import com.pfitztronic.iothub.core.accounts.exceptions.PasswordResetCodeExpiredException;
 import com.pfitztronic.iothub.core.accounts.exceptions.PasswordResetCodeNotFoundException;
@@ -58,9 +59,9 @@ class PasswordResetCodeServiceTest {
                 accountsConfigProps
         );
 
-        testUserId = new PhoneNumber("+12345678901");
-        testGeneratedCode = "123456";
-        testCodeHash = "hashedCode123456";
+        testUserId = new PhoneNumber(TestFixtures.TEST_USER_ID);
+        testGeneratedCode = TestFixtures.TEST_RESET_CODE;
+        testCodeHash = TestFixtures.TEST_RESET_CODE_HASH;
     }
 
     @Nested

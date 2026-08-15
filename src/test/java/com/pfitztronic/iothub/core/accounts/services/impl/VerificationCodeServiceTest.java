@@ -1,5 +1,6 @@
 package com.pfitztronic.iothub.core.accounts.services.impl;
 
+import com.pfitztronic.iothub.core.TestFixtures;
 import com.pfitztronic.iothub.core.accounts.models.PhoneNumber;
 import com.pfitztronic.iothub.core.accounts.models.VerificationCode;
 import com.pfitztronic.iothub.core.accounts.publishers.interfaces.IUserNotificationPublisher;
@@ -20,6 +21,11 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -55,9 +61,9 @@ class VerificationCodeServiceTest {
                 accountsConfigProps
         );
 
-        testUserId = new PhoneNumber("+12345678901");
-        testGeneratedCode = "987654";
-        testCodeHash = "hashed987654";
+        testUserId = new PhoneNumber(TestFixtures.TEST_USER_ID);
+        testGeneratedCode = TestFixtures.TEST_VERIFICATION_CODE;
+        testCodeHash = TestFixtures.TEST_VERIFICATION_CODE_HASH;
     }
 
     @Nested
@@ -209,6 +215,79 @@ class VerificationCodeServiceTest {
             Exception ex = assertThrows(IllegalArgumentException.class,
                     () -> verificationCodeService.verifyCode(testUserId, ""));
             assertEquals("Invalid verification code", ex.getMessage());
+        }
+    }
+
+    @Nested
+    @DisplayName("Concurrent Code Generation Tests")
+    class ConcurrentCodeGenerationTests {
+
+        @BeforeEach
+        void setup() {
+            // Setup with clean mocks for concurrent tests
+        }
+
+        @Test
+        @DisplayName("Should detect code collision in concurrent generation")
+        void concurrentCodeCollisionDetection() throws InterruptedException {
+            // given
+            int numberOfThreads = 3;
+            CountDownLatch startLatch = new CountDownLatch(1);
+            CountDownLatch endLatch = new CountDownLatch(numberOfThreads);
+            AtomicInteger generationCount = new AtomicInteger(0);
+            ConcurrentLinkedQueue<Throwable> unexpectedFailures = new ConcurrentLinkedQueue<>();
+
+            String[] generatedCodes = {"111111", "222222", "333333"};
+            
+            // Setup mocks to return different codes for each thread
+            when(codeGenerator.generateCode())
+                    .thenReturn(generatedCodes[0])
+                    .thenReturn(generatedCodes[1])
+                    .thenReturn(generatedCodes[2]);
+
+            when(passwordEncoder.encode(anyString()))
+                    .thenAnswer(invocation -> "hashed_" + invocation.getArgument(0));
+
+            when(accountsConfigProps.verifyAccountDelayHours()).thenReturn(2);
+
+            when(verificationCodeRepository.save(any(VerificationCode.class)))
+                    .thenAnswer(invocation -> {
+                        VerificationCode vc = invocation.getArgument(0);
+                        generationCount.incrementAndGet();
+                        return VerificationCode.builder()
+                                .id(UUID.randomUUID())
+                                .userId(vc.getUserId())
+                                .codeHash(vc.getCodeHash())
+                                .expiresAt(vc.getExpiresAt())
+                                .createdAt(TestFixtures.FIXED_INSTANT)
+                                .build();
+                    });
+
+            // when
+            ExecutorService executor = Executors.newFixedThreadPool(numberOfThreads);
+
+            for (int i = 0; i < numberOfThreads; i++) {
+                executor.submit(() -> {
+                    try {
+                        startLatch.await();
+                        verificationCodeService.generateVerificationCode(testUserId);
+                    } catch (Exception e) {
+                        unexpectedFailures.add(e);
+                    } finally {
+                        endLatch.countDown();
+                    }
+                });
+            }
+
+            startLatch.countDown();
+            endLatch.await();
+            executor.shutdown();
+
+            // then
+            assertTrue(unexpectedFailures.isEmpty(),
+                    () -> "Unexpected concurrent failure: " + unexpectedFailures.peek());
+            assertEquals(numberOfThreads, generationCount.get(), "All codes should be generated");
+            verify(verificationCodeRepository, times(numberOfThreads)).save(any(VerificationCode.class));
         }
     }
 }

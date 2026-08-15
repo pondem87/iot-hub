@@ -1,5 +1,6 @@
 package com.pfitztronic.iothub.core.authentication.services.impl;
 
+import com.pfitztronic.iothub.core.TestFixtures;
 import com.pfitztronic.iothub.core.authentication.JwtProperties;
 import com.pfitztronic.iothub.core.authentication.exceptions.UserAgentCredentialsInvalidException;
 import com.pfitztronic.iothub.core.authentication.exceptions.UserAgentSessionExpiredException;
@@ -27,11 +28,6 @@ import static org.mockito.Mockito.*;
 @DisplayName("JWT Authentication Session Service Tests")
 class JwtAuthenticationSessionServiceTest {
 
-    private static final String TEST_SECRET = "mySecretKeyForTestingPurposesThatIsLongEnough256Bits!";
-    private static final long TEST_EXPIRATION = 3600L; // 1 hour in seconds
-    private static final String TEST_USER_ID = "+12345678901";
-    private static final String TEST_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64)";
-
     @Mock
     private SessionManagementService sessionManagementService;
 
@@ -39,7 +35,7 @@ class JwtAuthenticationSessionServiceTest {
 
     @BeforeEach
     void setUp() {
-        JwtProperties jwtProperties = new JwtProperties(TEST_SECRET, TEST_EXPIRATION);
+        JwtProperties jwtProperties = new JwtProperties(TestFixtures.TEST_SECRET, TestFixtures.JWT_EXPIRATION_SECONDS);
         jwtAuthenticationSessionService = new JwtAuthenticationSessionService(
                 jwtProperties,
                 sessionManagementService
@@ -47,7 +43,7 @@ class JwtAuthenticationSessionServiceTest {
     }
 
     private SecretKey getTestSigningKey() {
-        return Keys.hmacShaKeyFor(TEST_SECRET.getBytes());
+        return Keys.hmacShaKeyFor(TestFixtures.TEST_SECRET.getBytes());
     }
 
     private String generateValidToken(UUID sessionId, String userId, String userAgent, Instant expiresAt) {
@@ -55,7 +51,7 @@ class JwtAuthenticationSessionServiceTest {
                 .subject(userId)
                 .claim("sessionId", sessionId.toString())
                 .claim("userAgent", userAgent)
-                .issuedAt(Date.from(Instant.now()))
+                .issuedAt(Date.from(TestFixtures.FIXED_INSTANT))
                 .expiration(Date.from(expiresAt))
                 .signWith(getTestSigningKey())
                 .compact();
@@ -70,29 +66,34 @@ class JwtAuthenticationSessionServiceTest {
         void generateTokenSuccess() {
             // given
             UUID sessionId = UUID.randomUUID();
-            Instant createdAt = Instant.now();
-            Instant expiresAt = createdAt.plusSeconds(TEST_EXPIRATION);
+            Instant createdAt = TestFixtures.FIXED_INSTANT;
+            Instant expiresAt = createdAt.plusSeconds(TestFixtures.JWT_EXPIRATION_SECONDS);
 
             Session session = new Session(
                     sessionId,
-                    TEST_USER_ID,
-                    TEST_USER_AGENT,
+                    TestFixtures.TEST_USER_ID,
+                    TestFixtures.TEST_USER_AGENT,
                     createdAt,
                     expiresAt,
                     null
             );
 
-            when(sessionManagementService.createUserAgentSession(TEST_USER_ID, TEST_USER_AGENT, TEST_EXPIRATION))
+            when(sessionManagementService.createUserAgentSession(TestFixtures.TEST_USER_ID, TestFixtures.TEST_USER_AGENT, TestFixtures.JWT_EXPIRATION_SECONDS))
                     .thenReturn(session);
 
             // when
-            String token = jwtAuthenticationSessionService.generateToken(TEST_USER_ID, TEST_USER_AGENT);
+            String token = jwtAuthenticationSessionService.generateToken(TestFixtures.TEST_USER_ID, TestFixtures.TEST_USER_AGENT);
 
-            // then
+            // then - verify token structure (JWT format: header.payload.signature)
             assertNotNull(token);
-            assertFalse(token.isEmpty());
+            assertFalse(token.isBlank(), "Token should not be blank");
+            String[] parts = token.split("\\.");
+            assertEquals(3, parts.length, "JWT token should have 3 parts (header.payload.signature)");
+            assertTrue(parts[0].length() > 0, "Token header should not be empty");
+            assertTrue(parts[1].length() > 0, "Token payload should not be empty");
+            assertTrue(parts[2].length() > 0, "Token signature should not be empty");
             verify(sessionManagementService, times(1))
-                    .createUserAgentSession(TEST_USER_ID, TEST_USER_AGENT, TEST_EXPIRATION);
+                    .createUserAgentSession(TestFixtures.TEST_USER_ID, TestFixtures.TEST_USER_AGENT, TestFixtures.JWT_EXPIRATION_SECONDS);
         }
 
         @Test
@@ -100,29 +101,29 @@ class JwtAuthenticationSessionServiceTest {
         void generateTokenCreatesSessionWithCorrectDuration() {
             // given
             UUID sessionId = UUID.randomUUID();
-            Instant createdAt = Instant.now();
-            Instant expiresAt = createdAt.plusSeconds(TEST_EXPIRATION);
+            Instant createdAt = TestFixtures.FIXED_INSTANT;
+            Instant expiresAt = createdAt.plusSeconds(TestFixtures.JWT_EXPIRATION_SECONDS);
 
             Session session = new Session(
                     sessionId,
-                    TEST_USER_ID,
-                    TEST_USER_AGENT,
+                    TestFixtures.TEST_USER_ID,
+                    TestFixtures.TEST_USER_AGENT,
                     createdAt,
                     expiresAt,
                     null
             );
 
-            when(sessionManagementService.createUserAgentSession(TEST_USER_ID, TEST_USER_AGENT, TEST_EXPIRATION))
+            when(sessionManagementService.createUserAgentSession(TestFixtures.TEST_USER_ID, TestFixtures.TEST_USER_AGENT, TestFixtures.JWT_EXPIRATION_SECONDS))
                     .thenReturn(session);
 
             // when
-            jwtAuthenticationSessionService.generateToken(TEST_USER_ID, TEST_USER_AGENT);
+            jwtAuthenticationSessionService.generateToken(TestFixtures.TEST_USER_ID, TestFixtures.TEST_USER_AGENT);
 
             // then
             verify(sessionManagementService).createUserAgentSession(
-                    eq(TEST_USER_ID),
-                    eq(TEST_USER_AGENT),
-                    eq(TEST_EXPIRATION)
+                    eq(TestFixtures.TEST_USER_ID),
+                    eq(TestFixtures.TEST_USER_AGENT),
+                    eq(TestFixtures.JWT_EXPIRATION_SECONDS)
             );
         }
     }
@@ -136,30 +137,30 @@ class JwtAuthenticationSessionServiceTest {
         void authenticateValidTokenSuccess() {
             // given
             UUID sessionId = UUID.randomUUID();
-            Instant createdAt = Instant.now();
-            Instant expiresAt = createdAt.plusSeconds(TEST_EXPIRATION);
+            Instant createdAt = TestFixtures.FIXED_INSTANT;
+            Instant expiresAt = createdAt.plusSeconds(TestFixtures.JWT_EXPIRATION_SECONDS);
 
             Session session = new Session(
                     sessionId,
-                    TEST_USER_ID,
-                    TEST_USER_AGENT,
+                    TestFixtures.TEST_USER_ID,
+                    TestFixtures.TEST_USER_AGENT,
                     createdAt,
                     expiresAt,
                     null
             );
 
-            String token = generateValidToken(sessionId, TEST_USER_ID, TEST_USER_AGENT, expiresAt);
+            String token = generateValidToken(sessionId, TestFixtures.TEST_USER_ID, TestFixtures.TEST_USER_AGENT, expiresAt);
 
-            when(sessionManagementService.findCurrentUserAgentSession(sessionId, TEST_USER_ID, TEST_USER_AGENT))
+            when(sessionManagementService.findCurrentUserAgentSession(sessionId, TestFixtures.TEST_USER_ID, TestFixtures.TEST_USER_AGENT))
                     .thenReturn(session);
 
             // when
-            String authenticatedUserId = jwtAuthenticationSessionService.authenticate(token);
+            String authenticatedUserId = jwtAuthenticationSessionService.authenticate(token, TestFixtures.TEST_USER_AGENT);
 
             // then
-            assertEquals(TEST_USER_ID, authenticatedUserId);
+            assertEquals(TestFixtures.TEST_USER_ID, authenticatedUserId);
             verify(sessionManagementService, times(1))
-                    .findCurrentUserAgentSession(sessionId, TEST_USER_ID, TEST_USER_AGENT);
+                    .findCurrentUserAgentSession(sessionId, TestFixtures.TEST_USER_ID, TestFixtures.TEST_USER_AGENT);
         }
 
         @Test
@@ -167,7 +168,7 @@ class JwtAuthenticationSessionServiceTest {
         void authenticateNullTokenThrowsException() {
             // when & then
             RuntimeException exception = assertThrows(UserAgentCredentialsInvalidException.class,
-                    () -> jwtAuthenticationSessionService.authenticate(null));
+                    () -> jwtAuthenticationSessionService.authenticate(null, TestFixtures.TEST_USER_AGENT));
 
             assertEquals("Invalid token", exception.getMessage());
             verifyNoInteractions(sessionManagementService);
@@ -178,7 +179,7 @@ class JwtAuthenticationSessionServiceTest {
         void authenticateEmptyTokenThrowsException() {
             // when & then
             RuntimeException exception = assertThrows(UserAgentCredentialsInvalidException.class,
-                    () -> jwtAuthenticationSessionService.authenticate(""));
+                    () -> jwtAuthenticationSessionService.authenticate("", TestFixtures.TEST_USER_AGENT));
 
             assertEquals("Invalid token", exception.getMessage());
             verifyNoInteractions(sessionManagementService);
@@ -192,7 +193,7 @@ class JwtAuthenticationSessionServiceTest {
 
             // when & then
             assertThrows(UserAgentCredentialsInvalidException.class,
-                    () -> jwtAuthenticationSessionService.authenticate(malformedToken));
+                    () -> jwtAuthenticationSessionService.authenticate(malformedToken, TestFixtures.TEST_USER_AGENT));
 
             verifyNoInteractions(sessionManagementService);
         }
@@ -205,17 +206,17 @@ class JwtAuthenticationSessionServiceTest {
             SecretKey differentKey = Keys.hmacShaKeyFor(differentSecret.getBytes());
 
             String tokenWithInvalidSignature = Jwts.builder()
-                    .subject(TEST_USER_ID)
+                    .subject(TestFixtures.TEST_USER_ID)
                     .claim("sessionId", UUID.randomUUID().toString())
-                    .claim("userAgent", TEST_USER_AGENT)
-                    .issuedAt(Date.from(Instant.now()))
-                    .expiration(Date.from(Instant.now().plusSeconds(TEST_EXPIRATION)))
+                    .claim("userAgent", TestFixtures.TEST_USER_AGENT)
+                    .issuedAt(Date.from(TestFixtures.FIXED_INSTANT))
+                    .expiration(Date.from(TestFixtures.FIXED_INSTANT.plusSeconds(TestFixtures.JWT_EXPIRATION_SECONDS)))
                     .signWith(differentKey)
                     .compact();
 
             // when & then
             assertThrows(Exception.class,
-                    () -> jwtAuthenticationSessionService.authenticate(tokenWithInvalidSignature));
+                    () -> jwtAuthenticationSessionService.authenticate(tokenWithInvalidSignature, TestFixtures.TEST_USER_AGENT));
 
             verifyNoInteractions(sessionManagementService);
         }
@@ -226,32 +227,54 @@ class JwtAuthenticationSessionServiceTest {
     class SessionValidationTests {
 
         @Test
+        @DisplayName("Should reject a valid token replayed with a different user agent")
+        void authenticateTokenWithDifferentUserAgentThrowsException() {
+            UUID sessionId = UUID.randomUUID();
+            Instant expiresAt = TestFixtures.FIXED_INSTANT.plusSeconds(TestFixtures.JWT_EXPIRATION_SECONDS);
+            String token = generateValidToken(
+                    sessionId,
+                    TestFixtures.TEST_USER_ID,
+                    TestFixtures.TEST_USER_AGENT,
+                    expiresAt
+            );
+
+            UserAgentCredentialsInvalidException exception = assertThrows(
+                    UserAgentCredentialsInvalidException.class,
+                    () -> jwtAuthenticationSessionService.authenticate(token, TestFixtures.TEST_USER_AGENT_2)
+            );
+
+            assertEquals("User agent does not match token", exception.getMessage());
+            verifyNoInteractions(sessionManagementService);
+        }
+
+        @Test
         @DisplayName("Should throw UserAgentSessionExpiredException for expired session")
         void authenticateExpiredSessionThrowsException() {
             // given
             UUID sessionId = UUID.randomUUID();
-            Instant createdAt = Instant.now().minusSeconds(7200); // 2 hours ago
-            Instant expiresAt = Instant.now().minusSeconds(3600); // 1 hour ago (expired)
+            // Use Instant.now() for expiration since the implementation checks against current time
+            Instant expiresAt = Instant.now().minusSeconds(3600); // Expired 1 hour ago
+            Instant createdAt = expiresAt.minusSeconds(7200); // Created 2 hours before expiry
 
             Session expiredSession = new Session(
                     sessionId,
-                    TEST_USER_ID,
-                    TEST_USER_AGENT,
+                    TestFixtures.TEST_USER_ID,
+                    TestFixtures.TEST_USER_AGENT,
                     createdAt,
                     expiresAt,
                     null
             );
 
             // Generate token with future expiration (JWT level) but session is expired
-            String token = generateValidToken(sessionId, TEST_USER_ID, TEST_USER_AGENT,
-                    Instant.now().plusSeconds(TEST_EXPIRATION));
+            String token = generateValidToken(sessionId, TestFixtures.TEST_USER_ID, TestFixtures.TEST_USER_AGENT,
+                    Instant.now().plusSeconds(TestFixtures.JWT_EXPIRATION_SECONDS));
 
-            when(sessionManagementService.findCurrentUserAgentSession(sessionId, TEST_USER_ID, TEST_USER_AGENT))
+            when(sessionManagementService.findCurrentUserAgentSession(sessionId, TestFixtures.TEST_USER_ID, TestFixtures.TEST_USER_AGENT))
                     .thenReturn(expiredSession);
 
             // when & then
             UserAgentSessionExpiredException exception = assertThrows(UserAgentSessionExpiredException.class,
-                    () -> jwtAuthenticationSessionService.authenticate(token));
+                    () -> jwtAuthenticationSessionService.authenticate(token, TestFixtures.TEST_USER_AGENT));
 
             assertEquals("Token has expired", exception.getMessage());
         }
@@ -261,27 +284,27 @@ class JwtAuthenticationSessionServiceTest {
         void authenticateRevokedSessionThrowsException() {
             // given
             UUID sessionId = UUID.randomUUID();
-            Instant createdAt = Instant.now();
-            Instant expiresAt = createdAt.plusSeconds(TEST_EXPIRATION);
-            Instant revokedAt = Instant.now().minusSeconds(60); // Revoked 1 minute ago
+            Instant createdAt = TestFixtures.FIXED_INSTANT;
+            Instant expiresAt = createdAt.plusSeconds(TestFixtures.JWT_EXPIRATION_SECONDS);
+            Instant revokedAt = TestFixtures.FIXED_INSTANT.minusSeconds(60); // Revoked 1 minute ago
 
             Session revokedSession = new Session(
                     sessionId,
-                    TEST_USER_ID,
-                    TEST_USER_AGENT,
+                    TestFixtures.TEST_USER_ID,
+                    TestFixtures.TEST_USER_AGENT,
                     createdAt,
                     expiresAt,
                     revokedAt
             );
 
-            String token = generateValidToken(sessionId, TEST_USER_ID, TEST_USER_AGENT, expiresAt);
+            String token = generateValidToken(sessionId, TestFixtures.TEST_USER_ID, TestFixtures.TEST_USER_AGENT, expiresAt);
 
-            when(sessionManagementService.findCurrentUserAgentSession(sessionId, TEST_USER_ID, TEST_USER_AGENT))
+            when(sessionManagementService.findCurrentUserAgentSession(sessionId, TestFixtures.TEST_USER_ID, TestFixtures.TEST_USER_AGENT))
                     .thenReturn(revokedSession);
 
             // when & then
             UserAgentSessionRevokedException exception = assertThrows(UserAgentSessionRevokedException.class,
-                    () -> jwtAuthenticationSessionService.authenticate(token));
+                    () -> jwtAuthenticationSessionService.authenticate(token, TestFixtures.TEST_USER_AGENT));
 
             assertEquals("Token has been revoked", exception.getMessage());
         }
@@ -291,17 +314,17 @@ class JwtAuthenticationSessionServiceTest {
         void authenticateInvalidSessionIdFormatThrowsException() {
             // given
             String tokenWithInvalidSessionId = Jwts.builder()
-                    .subject(TEST_USER_ID)
+                    .subject(TestFixtures.TEST_USER_ID)
                     .claim("sessionId", "not-a-valid-uuid")
-                    .claim("userAgent", TEST_USER_AGENT)
-                    .issuedAt(Date.from(Instant.now()))
-                    .expiration(Date.from(Instant.now().plusSeconds(TEST_EXPIRATION)))
+                    .claim("userAgent", TestFixtures.TEST_USER_AGENT)
+                    .issuedAt(Date.from(TestFixtures.FIXED_INSTANT))
+                    .expiration(Date.from(TestFixtures.FIXED_INSTANT.plusSeconds(TestFixtures.JWT_EXPIRATION_SECONDS)))
                     .signWith(getTestSigningKey())
                     .compact();
 
             // when & then
             RuntimeException exception = assertThrows(RuntimeException.class,
-                    () -> jwtAuthenticationSessionService.authenticate(tokenWithInvalidSessionId));
+                    () -> jwtAuthenticationSessionService.authenticate(tokenWithInvalidSessionId, TestFixtures.TEST_USER_AGENT));
 
             assertEquals("Invalid session ID format", exception.getMessage());
             verifyNoInteractions(sessionManagementService);
@@ -317,33 +340,33 @@ class JwtAuthenticationSessionServiceTest {
         void generateAndAuthenticateTokenSuccessfully() {
             // given
             UUID sessionId = UUID.randomUUID();
-            Instant createdAt = Instant.now();
-            Instant expiresAt = createdAt.plusSeconds(TEST_EXPIRATION);
+            Instant createdAt = TestFixtures.FIXED_INSTANT;
+            Instant expiresAt = createdAt.plusSeconds(TestFixtures.JWT_EXPIRATION_SECONDS);
 
             Session session = new Session(
                     sessionId,
-                    TEST_USER_ID,
-                    TEST_USER_AGENT,
+                    TestFixtures.TEST_USER_ID,
+                    TestFixtures.TEST_USER_AGENT,
                     createdAt,
                     expiresAt,
                     null
             );
 
-            when(sessionManagementService.createUserAgentSession(TEST_USER_ID, TEST_USER_AGENT, TEST_EXPIRATION))
+            when(sessionManagementService.createUserAgentSession(TestFixtures.TEST_USER_ID, TestFixtures.TEST_USER_AGENT, TestFixtures.JWT_EXPIRATION_SECONDS))
                     .thenReturn(session);
-            when(sessionManagementService.findCurrentUserAgentSession(sessionId, TEST_USER_ID, TEST_USER_AGENT))
+            when(sessionManagementService.findCurrentUserAgentSession(sessionId, TestFixtures.TEST_USER_ID, TestFixtures.TEST_USER_AGENT))
                     .thenReturn(session);
 
             // when
-            String token = jwtAuthenticationSessionService.generateToken(TEST_USER_ID, TEST_USER_AGENT);
-            String authenticatedUserId = jwtAuthenticationSessionService.authenticate(token);
+            String token = jwtAuthenticationSessionService.generateToken(TestFixtures.TEST_USER_ID, TestFixtures.TEST_USER_AGENT);
+            String authenticatedUserId = jwtAuthenticationSessionService.authenticate(token, TestFixtures.TEST_USER_AGENT);
 
             // then
-            assertEquals(TEST_USER_ID, authenticatedUserId);
+            assertEquals(TestFixtures.TEST_USER_ID, authenticatedUserId);
             verify(sessionManagementService, times(1))
-                    .createUserAgentSession(TEST_USER_ID, TEST_USER_AGENT, TEST_EXPIRATION);
+                    .createUserAgentSession(TestFixtures.TEST_USER_ID, TestFixtures.TEST_USER_AGENT, TestFixtures.JWT_EXPIRATION_SECONDS);
             verify(sessionManagementService, times(1))
-                    .findCurrentUserAgentSession(sessionId, TEST_USER_ID, TEST_USER_AGENT);
+                    .findCurrentUserAgentSession(sessionId, TestFixtures.TEST_USER_ID, TestFixtures.TEST_USER_AGENT);
         }
     }
 
@@ -356,27 +379,28 @@ class JwtAuthenticationSessionServiceTest {
         void authenticateSessionExpiringNow() {
             // given
             UUID sessionId = UUID.randomUUID();
-            Instant createdAt = Instant.now().minusSeconds(TEST_EXPIRATION);
+            // Use Instant.now() for expiration since the implementation checks against current time
             Instant expiresAt = Instant.now().minusNanos(1); // Just expired
+            Instant createdAt = expiresAt.minusSeconds(TestFixtures.JWT_EXPIRATION_SECONDS);
 
             Session justExpiredSession = new Session(
                     sessionId,
-                    TEST_USER_ID,
-                    TEST_USER_AGENT,
+                    TestFixtures.TEST_USER_ID,
+                    TestFixtures.TEST_USER_AGENT,
                     createdAt,
                     expiresAt,
                     null
             );
 
-            String token = generateValidToken(sessionId, TEST_USER_ID, TEST_USER_AGENT,
-                    Instant.now().plusSeconds(TEST_EXPIRATION));
+            String token = generateValidToken(sessionId, TestFixtures.TEST_USER_ID, TestFixtures.TEST_USER_AGENT,
+                    Instant.now().plusSeconds(TestFixtures.JWT_EXPIRATION_SECONDS));
 
-            when(sessionManagementService.findCurrentUserAgentSession(sessionId, TEST_USER_ID, TEST_USER_AGENT))
+            when(sessionManagementService.findCurrentUserAgentSession(sessionId, TestFixtures.TEST_USER_ID, TestFixtures.TEST_USER_AGENT))
                     .thenReturn(justExpiredSession);
 
             // when & then
             assertThrows(UserAgentSessionExpiredException.class,
-                    () -> jwtAuthenticationSessionService.authenticate(token));
+                    () -> jwtAuthenticationSessionService.authenticate(token, TestFixtures.TEST_USER_AGENT));
         }
 
         @Test
@@ -390,8 +414,8 @@ class JwtAuthenticationSessionServiceTest {
 
             UUID sessionId1 = UUID.randomUUID();
             UUID sessionId2 = UUID.randomUUID();
-            Instant createdAt = Instant.now();
-            Instant expiresAt = createdAt.plusSeconds(TEST_EXPIRATION);
+            Instant createdAt = TestFixtures.FIXED_INSTANT;
+            Instant expiresAt = createdAt.plusSeconds(TestFixtures.JWT_EXPIRATION_SECONDS);
 
             Session session1 = new Session(sessionId1, userId1, userAgent1, createdAt, expiresAt, null);
             Session session2 = new Session(sessionId2, userId2, userAgent2, createdAt, expiresAt, null);
@@ -405,8 +429,8 @@ class JwtAuthenticationSessionServiceTest {
                     .thenReturn(session2);
 
             // when
-            String authenticatedUser1 = jwtAuthenticationSessionService.authenticate(token1);
-            String authenticatedUser2 = jwtAuthenticationSessionService.authenticate(token2);
+            String authenticatedUser1 = jwtAuthenticationSessionService.authenticate(token1, userAgent1);
+            String authenticatedUser2 = jwtAuthenticationSessionService.authenticate(token2, userAgent2);
 
             // then
             assertEquals(userId1, authenticatedUser1);

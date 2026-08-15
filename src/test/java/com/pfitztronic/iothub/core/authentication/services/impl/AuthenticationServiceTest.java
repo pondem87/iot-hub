@@ -1,7 +1,9 @@
 package com.pfitztronic.iothub.core.authentication.services.impl;
 
+import com.pfitztronic.iothub.core.TestFixtures;
 import com.pfitztronic.iothub.core.authentication.dto.LoginInputData;
 import com.pfitztronic.iothub.core.authentication.dto.LoginResponse;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -21,6 +23,11 @@ import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -39,19 +46,20 @@ class AuthenticationServiceTest {
 
     private AuthenticationService authenticationService;
 
-    private static final String TEST_PHONE_NUMBER = "+1234567890123";
-    private static final String TEST_PASSWORD = "Password123!";
-    private static final String TEST_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64)";
-    private static final String GENERATED_JWT_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...";
-    private static final String TEST_USER_ID = "user123";
-
     @BeforeEach
     void setUp() {
-        authenticationService = new AuthenticationService(
-                authenticationManager,
-                jwtAuthenticationSessionService
-        );
-        // Clear security context before each test
+        try {
+            authenticationService = new AuthenticationService(
+                    authenticationManager,
+                    jwtAuthenticationSessionService
+            );
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
+    }
+
+    @AfterEach
+    void tearDown() {
         SecurityContextHolder.clearContext();
     }
 
@@ -63,43 +71,43 @@ class AuthenticationServiceTest {
         @DisplayName("Should successfully login with valid credentials")
         void shouldSuccessfullyLoginWithValidCredentials() {
             // given
-            LoginInputData credentials = new LoginInputData(TEST_PHONE_NUMBER, TEST_PASSWORD);
-            Authentication mockAuthentication = createMockAuthentication(TEST_USER_ID, true);
+            LoginInputData credentials = new LoginInputData(TestFixtures.TEST_PHONE_NUMBER, TestFixtures.TEST_PASSWORD);
+            Authentication mockAuthentication = createMockAuthentication(TestFixtures.TEST_USER_ID, true);
 
             when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                     .thenReturn(mockAuthentication);
-            when(jwtAuthenticationSessionService.generateToken(TEST_USER_ID, TEST_USER_AGENT))
-                    .thenReturn(GENERATED_JWT_TOKEN);
+            when(jwtAuthenticationSessionService.generateToken(TestFixtures.TEST_USER_ID, TestFixtures.TEST_USER_AGENT))
+                    .thenReturn(TestFixtures.GENERATED_JWT_TOKEN);
 
             // when
-            LoginResponse response = authenticationService.login(TEST_USER_AGENT, credentials);
+            LoginResponse response = authenticationService.login(TestFixtures.TEST_USER_AGENT, credentials);
 
             // then
             assertNotNull(response);
-            assertEquals(GENERATED_JWT_TOKEN, response.token());
+            assertEquals(TestFixtures.GENERATED_JWT_TOKEN, response.token());
             verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
-            verify(jwtAuthenticationSessionService).generateToken(TEST_USER_ID, TEST_USER_AGENT);
+            verify(jwtAuthenticationSessionService).generateToken(TestFixtures.TEST_USER_ID, TestFixtures.TEST_USER_AGENT);
         }
 
         @Test
         @DisplayName("Should create correct authentication token with phone number and password")
         void shouldCreateCorrectAuthenticationToken() {
             // given
-            LoginInputData credentials = new LoginInputData(TEST_PHONE_NUMBER, TEST_PASSWORD);
-            Authentication mockAuthentication = createMockAuthentication(TEST_USER_ID, true);
+            LoginInputData credentials = new LoginInputData(TestFixtures.TEST_PHONE_NUMBER, TestFixtures.TEST_PASSWORD);
+            Authentication mockAuthentication = createMockAuthentication(TestFixtures.TEST_USER_ID, true);
 
             when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                     .thenReturn(mockAuthentication);
             when(jwtAuthenticationSessionService.generateToken(anyString(), anyString()))
-                    .thenReturn(GENERATED_JWT_TOKEN);
+                    .thenReturn(TestFixtures.GENERATED_JWT_TOKEN);
 
             // when
-            authenticationService.login(TEST_USER_AGENT, credentials);
+            authenticationService.login(TestFixtures.TEST_USER_AGENT, credentials);
 
             // then
             verify(authenticationManager).authenticate(argThat(token ->
-                    token.getName().equals(TEST_PHONE_NUMBER) &&
-                    token.getCredentials().equals(TEST_PASSWORD)
+                    token.getName().equals(TestFixtures.TEST_PHONE_NUMBER) &&
+                    token.getCredentials().equals(TestFixtures.TEST_PASSWORD)
             ));
         }
 
@@ -107,29 +115,29 @@ class AuthenticationServiceTest {
         @DisplayName("Should return LoginResponse with generated token")
         void shouldReturnLoginResponseWithToken() {
             // given
-            LoginInputData credentials = new LoginInputData(TEST_PHONE_NUMBER, TEST_PASSWORD);
-            Authentication mockAuthentication = createMockAuthentication(TEST_USER_ID, true);
+            LoginInputData credentials = new LoginInputData(TestFixtures.TEST_PHONE_NUMBER, TestFixtures.TEST_PASSWORD);
+            Authentication mockAuthentication = createMockAuthentication(TestFixtures.TEST_USER_ID, true);
 
             when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                     .thenReturn(mockAuthentication);
-            when(jwtAuthenticationSessionService.generateToken(TEST_USER_ID, TEST_USER_AGENT))
-                    .thenReturn(GENERATED_JWT_TOKEN);
+            when(jwtAuthenticationSessionService.generateToken(TestFixtures.TEST_USER_ID, TestFixtures.TEST_USER_AGENT))
+                    .thenReturn(TestFixtures.GENERATED_JWT_TOKEN);
 
             // when
-            LoginResponse response = authenticationService.login(TEST_USER_AGENT, credentials);
+            LoginResponse response = authenticationService.login(TestFixtures.TEST_USER_AGENT, credentials);
 
             // then
             assertNotNull(response);
             assertNotNull(response.token());
-            assertEquals(GENERATED_JWT_TOKEN, response.token());
+            assertEquals(TestFixtures.GENERATED_JWT_TOKEN, response.token());
         }
 
         @Test
         @DisplayName("Should throw AuthorizationDeniedException when authentication fails")
         void shouldThrowAuthorizationDeniedExceptionWhenAuthenticationFails() {
             // given
-            LoginInputData credentials = new LoginInputData(TEST_PHONE_NUMBER, TEST_PASSWORD);
-            Authentication failedAuthentication = createMockAuthentication(TEST_USER_ID, false);
+            LoginInputData credentials = new LoginInputData(TestFixtures.TEST_PHONE_NUMBER, TestFixtures.TEST_PASSWORD);
+            Authentication failedAuthentication = createMockAuthentication(TestFixtures.TEST_USER_ID, false);
 
             when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                     .thenReturn(failedAuthentication);
@@ -137,7 +145,7 @@ class AuthenticationServiceTest {
             // when & then
             AuthorizationDeniedException exception = assertThrows(
                     AuthorizationDeniedException.class,
-                    () -> authenticationService.login(TEST_USER_AGENT, credentials)
+                    () -> authenticationService.login(TestFixtures.TEST_USER_AGENT, credentials)
             );
             assertEquals("Authentication failed", exception.getMessage());
             verify(jwtAuthenticationSessionService, never()).generateToken(anyString(), anyString());
@@ -147,14 +155,14 @@ class AuthenticationServiceTest {
         @DisplayName("Should throw exception when authentication manager throws BadCredentialsException")
         void shouldThrowExceptionOnBadCredentials() {
             // given
-            LoginInputData credentials = new LoginInputData(TEST_PHONE_NUMBER, TEST_PASSWORD);
+            LoginInputData credentials = new LoginInputData(TestFixtures.TEST_PHONE_NUMBER, TestFixtures.TEST_PASSWORD);
 
             when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                     .thenThrow(new BadCredentialsException("Bad credentials"));
 
             // when & then
             assertThrows(BadCredentialsException.class,
-                    () -> authenticationService.login(TEST_USER_AGENT, credentials)
+                    () -> authenticationService.login(TestFixtures.TEST_USER_AGENT, credentials)
             );
         }
 
@@ -162,40 +170,40 @@ class AuthenticationServiceTest {
         @DisplayName("Should generate token with user ID from authentication")
         void shouldGenerateTokenWithUserIdFromAuthentication() {
             // given
-            LoginInputData credentials = new LoginInputData(TEST_PHONE_NUMBER, TEST_PASSWORD);
+            LoginInputData credentials = new LoginInputData(TestFixtures.TEST_PHONE_NUMBER, TestFixtures.TEST_PASSWORD);
             String expectedUserId = "user-123-xyz";
             Authentication mockAuthentication = createMockAuthentication(expectedUserId, true);
 
             when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                     .thenReturn(mockAuthentication);
-            when(jwtAuthenticationSessionService.generateToken(expectedUserId, TEST_USER_AGENT))
-                    .thenReturn(GENERATED_JWT_TOKEN);
+            when(jwtAuthenticationSessionService.generateToken(expectedUserId, TestFixtures.TEST_USER_AGENT))
+                    .thenReturn(TestFixtures.GENERATED_JWT_TOKEN);
 
             // when
-            authenticationService.login(TEST_USER_AGENT, credentials);
+            authenticationService.login(TestFixtures.TEST_USER_AGENT, credentials);
 
             // then
-            verify(jwtAuthenticationSessionService).generateToken(expectedUserId, TEST_USER_AGENT);
+            verify(jwtAuthenticationSessionService).generateToken(expectedUserId, TestFixtures.TEST_USER_AGENT);
         }
 
         @Test
         @DisplayName("Should pass user agent to token generation")
         void shouldPassUserAgentToTokenGeneration() {
             // given
-            LoginInputData credentials = new LoginInputData(TEST_PHONE_NUMBER, TEST_PASSWORD);
+            LoginInputData credentials = new LoginInputData(TestFixtures.TEST_PHONE_NUMBER, TestFixtures.TEST_PASSWORD);
             String customUserAgent = "Custom User Agent";
-            Authentication mockAuthentication = createMockAuthentication(TEST_USER_ID, true);
+            Authentication mockAuthentication = createMockAuthentication(TestFixtures.TEST_USER_ID, true);
 
             when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                     .thenReturn(mockAuthentication);
-            when(jwtAuthenticationSessionService.generateToken(TEST_USER_ID, customUserAgent))
-                    .thenReturn(GENERATED_JWT_TOKEN);
+            when(jwtAuthenticationSessionService.generateToken(TestFixtures.TEST_USER_ID, customUserAgent))
+                    .thenReturn(TestFixtures.GENERATED_JWT_TOKEN);
 
             // when
             authenticationService.login(customUserAgent, credentials);
 
             // then
-            verify(jwtAuthenticationSessionService).generateToken(TEST_USER_ID, customUserAgent);
+            verify(jwtAuthenticationSessionService).generateToken(TestFixtures.TEST_USER_ID, customUserAgent);
         }
     }
 
@@ -207,15 +215,15 @@ class AuthenticationServiceTest {
         @DisplayName("Should successfully logout authenticated user")
         void shouldSuccessfullyLogoutAuthenticatedUser() {
             // given
-            Authentication mockAuthentication = createMockAuthentication(TEST_USER_ID, true);
+            Authentication mockAuthentication = createMockAuthentication(TestFixtures.TEST_USER_ID, true);
             setSecurityContext(mockAuthentication);
 
             // when
-            String result = authenticationService.logout(TEST_USER_AGENT);
+            String result = authenticationService.logout(TestFixtures.TEST_USER_AGENT);
 
             // then
             assertEquals("Logged out successfully", result);
-            verify(jwtAuthenticationSessionService).revokeCurrentSession(TEST_USER_ID, TEST_USER_AGENT);
+            verify(jwtAuthenticationSessionService).revokeCurrentSession(TestFixtures.TEST_USER_ID, TestFixtures.TEST_USER_AGENT);
         }
 
         @Test
@@ -243,7 +251,7 @@ class AuthenticationServiceTest {
             // when & then
             AuthorizationDeniedException exception = assertThrows(
                     AuthorizationDeniedException.class,
-                    () -> authenticationService.logout(TEST_USER_AGENT)
+                    () -> authenticationService.logout(TestFixtures.TEST_USER_AGENT)
             );
             assertEquals("No authenticated user found", exception.getMessage());
             verify(jwtAuthenticationSessionService, never()).revokeCurrentSession(anyString(), anyString());
@@ -259,7 +267,7 @@ class AuthenticationServiceTest {
             // when & then
             AuthorizationDeniedException exception = assertThrows(
                     AuthorizationDeniedException.class,
-                    () -> authenticationService.logout(TEST_USER_AGENT)
+                    () -> authenticationService.logout(TestFixtures.TEST_USER_AGENT)
             );
             assertEquals("No authenticated user found", exception.getMessage());
         }
@@ -268,13 +276,13 @@ class AuthenticationServiceTest {
         @DisplayName("Should throw exception when authentication is not authenticated")
         void shouldThrowExceptionWhenAuthenticationNotAuthenticated() {
             // given
-            Authentication mockAuthentication = createMockAuthentication(TEST_USER_ID, false);
+            Authentication mockAuthentication = createMockAuthentication(TestFixtures.TEST_USER_ID, false);
             setSecurityContext(mockAuthentication);
 
             // when & then
             AuthorizationDeniedException exception = assertThrows(
                     AuthorizationDeniedException.class,
-                    () -> authenticationService.logout(TEST_USER_AGENT)
+                    () -> authenticationService.logout(TestFixtures.TEST_USER_AGENT)
             );
             assertEquals("No authenticated user found", exception.getMessage());
             verify(jwtAuthenticationSessionService, never()).revokeCurrentSession(anyString(), anyString());
@@ -285,14 +293,14 @@ class AuthenticationServiceTest {
         void shouldPassCorrectUserAgentToRevokeSession() {
             // given
             String specificUserAgent = "Specific User Agent String";
-            Authentication mockAuthentication = createMockAuthentication(TEST_USER_ID, true);
+            Authentication mockAuthentication = createMockAuthentication(TestFixtures.TEST_USER_ID, true);
             setSecurityContext(mockAuthentication);
 
             // when
             authenticationService.logout(specificUserAgent);
 
             // then
-            verify(jwtAuthenticationSessionService).revokeCurrentSession(TEST_USER_ID, specificUserAgent);
+            verify(jwtAuthenticationSessionService).revokeCurrentSession(TestFixtures.TEST_USER_ID, specificUserAgent);
         }
     }
 
@@ -304,7 +312,7 @@ class AuthenticationServiceTest {
         @DisplayName("Should successfully logout from all sessions")
         void shouldSuccessfullyLogoutFromAllSessions() {
             // given
-            Authentication mockAuthentication = createMockAuthentication(TEST_USER_ID, true);
+            Authentication mockAuthentication = createMockAuthentication(TestFixtures.TEST_USER_ID, true);
             setSecurityContext(mockAuthentication);
 
             // when
@@ -312,7 +320,7 @@ class AuthenticationServiceTest {
 
             // then
             assertEquals("Logged out from all sessions successfully", result);
-            verify(jwtAuthenticationSessionService).revokeAllSessions(TEST_USER_ID);
+            verify(jwtAuthenticationSessionService).revokeAllSessions(TestFixtures.TEST_USER_ID);
         }
 
         @Test
@@ -364,7 +372,7 @@ class AuthenticationServiceTest {
         @DisplayName("Should throw exception when authentication is not authenticated")
         void shouldThrowExceptionWhenAuthenticationNotAuthenticated() {
             // given
-            Authentication mockAuthentication = createMockAuthentication(TEST_USER_ID, false);
+            Authentication mockAuthentication = createMockAuthentication(TestFixtures.TEST_USER_ID, false);
             setSecurityContext(mockAuthentication);
 
             // when & then
@@ -390,10 +398,10 @@ class AuthenticationServiceTest {
             setSecurityContext(mockAuthentication);
 
             // when
-            authenticationService.logout(TEST_USER_AGENT);
+            authenticationService.logout(TestFixtures.TEST_USER_AGENT);
 
             // then
-            verify(jwtAuthenticationSessionService).revokeCurrentSession(contextUsername, TEST_USER_AGENT);
+            verify(jwtAuthenticationSessionService).revokeCurrentSession(contextUsername, TestFixtures.TEST_USER_AGENT);
         }
 
         @Test
@@ -420,15 +428,15 @@ class AuthenticationServiceTest {
         @DisplayName("Should have correct message for failed authentication")
         void shouldHaveCorrectMessageForFailedAuthentication() {
             // given
-            LoginInputData credentials = new LoginInputData(TEST_PHONE_NUMBER, TEST_PASSWORD);
-            Authentication failedAuth = createMockAuthentication(TEST_USER_ID, false);
+            LoginInputData credentials = new LoginInputData(TestFixtures.TEST_PHONE_NUMBER, TestFixtures.TEST_PASSWORD);
+            Authentication failedAuth = createMockAuthentication(TestFixtures.TEST_USER_ID, false);
             when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                     .thenReturn(failedAuth);
 
             // when
             AuthorizationDeniedException exception = assertThrows(
                     AuthorizationDeniedException.class,
-                    () -> authenticationService.login(TEST_USER_AGENT, credentials)
+                    () -> authenticationService.login(TestFixtures.TEST_USER_AGENT, credentials)
             );
 
             // then
@@ -444,7 +452,7 @@ class AuthenticationServiceTest {
             // when
             AuthorizationDeniedException exception = assertThrows(
                     AuthorizationDeniedException.class,
-                    () -> authenticationService.logout(TEST_USER_AGENT)
+                    () -> authenticationService.logout(TestFixtures.TEST_USER_AGENT)
             );
 
             // then
@@ -465,6 +473,60 @@ class AuthenticationServiceTest {
 
             // then
             assertEquals("No authenticated user found", exception.getMessage());
+        }
+    }
+
+    @Nested
+    @DisplayName("Concurrent Login Tests")
+    class ConcurrentLoginTests {
+
+        @Test
+        @DisplayName("Should handle concurrent login attempts")
+        void concurrentLoginAttempts() throws InterruptedException {
+            // given
+            int numberOfThreads = 3;
+            CountDownLatch startLatch = new CountDownLatch(1);
+            CountDownLatch endLatch = new CountDownLatch(numberOfThreads);
+            AtomicInteger successCount = new AtomicInteger(0);
+            ConcurrentLinkedQueue<Throwable> unexpectedFailures = new ConcurrentLinkedQueue<>();
+
+            // Setup mock before concurrent test
+            Authentication mockAuth = TestFixtures.createMockAuthentication(TestFixtures.TEST_USER_ID, true);
+            when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                    .thenReturn(mockAuth);
+            when(jwtAuthenticationSessionService.generateToken(anyString(), anyString()))
+                    .thenReturn(TestFixtures.GENERATED_JWT_TOKEN);
+
+            // when
+            ExecutorService executor = Executors.newFixedThreadPool(numberOfThreads);
+
+            for (int i = 0; i < numberOfThreads; i++) {
+                executor.submit(() -> {
+                    try {
+                        startLatch.await();
+                        
+                        LoginResponse response = authenticationService.login(TestFixtures.TEST_USER_AGENT,
+                                new LoginInputData(TestFixtures.TEST_PHONE_NUMBER, TestFixtures.TEST_PASSWORD));
+                        
+                        if (response != null && response.token() != null && !response.token().isEmpty()) {
+                            successCount.incrementAndGet();
+                        }
+                    } catch (Exception e) {
+                        unexpectedFailures.add(e);
+                    } finally {
+                        endLatch.countDown();
+                    }
+                });
+            }
+
+            startLatch.countDown();
+            endLatch.await();
+            executor.shutdown();
+
+            // then
+            assertTrue(unexpectedFailures.isEmpty(),
+                    () -> "Unexpected concurrent failure: " + unexpectedFailures.peek());
+            assertEquals(numberOfThreads, successCount.get(), "All logins should succeed");
         }
     }
 

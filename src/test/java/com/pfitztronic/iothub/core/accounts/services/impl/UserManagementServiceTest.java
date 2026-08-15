@@ -1,5 +1,6 @@
 package com.pfitztronic.iothub.core.accounts.services.impl;
 
+import com.pfitztronic.iothub.core.TestFixtures;
 import com.pfitztronic.iothub.core.accounts.exceptions.*;
 import com.pfitztronic.iothub.core.accounts.models.PhoneNumber;
 import com.pfitztronic.iothub.core.accounts.models.User;
@@ -21,6 +22,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.util.Optional;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -333,6 +339,86 @@ class UserManagementServiceTest {
             assertThrows(IllegalUserAccountStateException.class,
                     () -> userManagementService.resendVerificationCode(testUserId.number()));
             verify(verificationCodeService, never()).generateVerificationCode(any());
+        }
+    }
+
+    @Nested
+    @DisplayName("Concurrent User Creation Tests")
+    class ConcurrentUserCreationTests {
+
+        @BeforeEach
+        void setUp() {
+            userManagementService = new UserManagementService(
+                    userRepository,
+                    verificationCodeService,
+                    passwordResetCodeService,
+                    passwordEncoder,
+                    auditedEventPublisher,
+                    userNotificationPublisher,
+                    userCreatedEventPublisher
+            );
+        }
+
+        @Test
+        @DisplayName("Should handle concurrent user creation attempts")
+        void concurrentUserCreationHandling() throws InterruptedException {
+            // given
+            int numberOfThreads = 3;
+            CountDownLatch startLatch = new CountDownLatch(1);
+            CountDownLatch endLatch = new CountDownLatch(numberOfThreads);
+            AtomicInteger successCount = new AtomicInteger(0);
+            ConcurrentLinkedQueue<Throwable> unexpectedFailures = new ConcurrentLinkedQueue<>();
+
+            // Setup mocks for successful user creation
+            when(passwordEncoder.encode(anyString()))
+                    .thenReturn("encodedPassword");
+
+            when(userRepository.save(any(User.class)))
+                    .thenAnswer(invocation -> {
+                        User user = invocation.getArgument(0);
+                        return User.builder()
+                                .userId(user.getUserId())
+                                .name(user.getName())
+                                .passwordHash(user.getPasswordHash())
+                                .status(UserStatus.ACTIVE)
+                                .createdAt(TestFixtures.FIXED_INSTANT)
+                                .build();
+                    });
+
+            // when
+            ExecutorService executor = Executors.newFixedThreadPool(numberOfThreads);
+
+            for (int i = 0; i < numberOfThreads; i++) {
+                final int threadId = i;
+                executor.submit(() -> {
+                    try {
+                        startLatch.await();
+                        
+                        User createdUser = userManagementService.createNewUser(
+                                TestFixtures.TEST_USER_ID + threadId,
+                                TestFixtures.TEST_USER_NAME + threadId,
+                                TestFixtures.TEST_SECURE_PASSWORD
+                        );
+                        
+                        if (createdUser != null && createdUser.getUserId() != null) {
+                            successCount.incrementAndGet();
+                        }
+                    } catch (Exception e) {
+                        unexpectedFailures.add(e);
+                    } finally {
+                        endLatch.countDown();
+                    }
+                });
+            }
+
+            startLatch.countDown();
+            endLatch.await();
+            executor.shutdown();
+
+            // then
+            assertTrue(unexpectedFailures.isEmpty(),
+                    () -> "Unexpected concurrent failure: " + unexpectedFailures.peek());
+            assertEquals(numberOfThreads, successCount.get(), "All user creations should succeed");
         }
     }
 }

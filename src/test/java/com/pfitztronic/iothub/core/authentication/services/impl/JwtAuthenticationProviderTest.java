@@ -65,7 +65,7 @@ class JwtAuthenticationProviderTest {
             Collection<GrantedAuthority> authorities = Set.of(new SimpleGrantedAuthority("ROLE_USER"));
             UserDetails userDetails = createTestUserDetails(TEST_USER_ID, authorities);
 
-            when(jwtAuthenticationSessionService.authenticate(TEST_TOKEN))
+            when(jwtAuthenticationSessionService.authenticate(TEST_TOKEN, TEST_USER_AGENT))
                     .thenReturn(TEST_USER_ID);
             when(userDetailsService.loadUserByUsername(TEST_USER_ID))
                     .thenReturn(userDetails);
@@ -80,7 +80,7 @@ class JwtAuthenticationProviderTest {
             assertEquals(userDetails, result.getDetails());
             assertEquals(authorities, result.getAuthorities());
 
-            verify(jwtAuthenticationSessionService, times(1)).authenticate(TEST_TOKEN);
+            verify(jwtAuthenticationSessionService, times(1)).authenticate(TEST_TOKEN, TEST_USER_AGENT);
             verify(userDetailsService, times(1)).loadUserByUsername(TEST_USER_ID);
         }
 
@@ -91,7 +91,7 @@ class JwtAuthenticationProviderTest {
             JwtAuthentication jwtAuthentication = new JwtAuthentication(TEST_TOKEN, TEST_USER_AGENT);
             UserDetails userDetails = createTestUserDetails(TEST_USER_ID, List.of());
 
-            when(jwtAuthenticationSessionService.authenticate(TEST_TOKEN))
+            when(jwtAuthenticationSessionService.authenticate(TEST_TOKEN, TEST_USER_AGENT))
                     .thenReturn(TEST_USER_ID);
             when(userDetailsService.loadUserByUsername(TEST_USER_ID))
                     .thenReturn(userDetails);
@@ -117,7 +117,7 @@ class JwtAuthenticationProviderTest {
             );
             UserDetails userDetails = createTestUserDetails(TEST_USER_ID, authorities);
 
-            when(jwtAuthenticationSessionService.authenticate(TEST_TOKEN))
+            when(jwtAuthenticationSessionService.authenticate(TEST_TOKEN, TEST_USER_AGENT))
                     .thenReturn(TEST_USER_ID);
             when(userDetailsService.loadUserByUsername(TEST_USER_ID))
                     .thenReturn(userDetails);
@@ -142,14 +142,14 @@ class JwtAuthenticationProviderTest {
             String invalidToken = "invalid.token";
             JwtAuthentication jwtAuthentication = new JwtAuthentication(invalidToken, TEST_USER_AGENT);
 
-            when(jwtAuthenticationSessionService.authenticate(invalidToken))
+            when(jwtAuthenticationSessionService.authenticate(invalidToken, TEST_USER_AGENT))
                     .thenThrow(new UserAgentCredentialsInvalidException("User agent credentials are invalid"));
 
             // when & then
             assertThrows(UserAgentCredentialsInvalidException.class,
                     () -> jwtAuthenticationProvider.authenticate(jwtAuthentication));
 
-            verify(jwtAuthenticationSessionService, times(1)).authenticate(invalidToken);
+            verify(jwtAuthenticationSessionService, times(1)).authenticate(invalidToken, TEST_USER_AGENT);
             verifyNoInteractions(userDetailsService);
         }
 
@@ -159,7 +159,7 @@ class JwtAuthenticationProviderTest {
             // given
             JwtAuthentication jwtAuthentication = new JwtAuthentication(TEST_TOKEN, TEST_USER_AGENT);
 
-            when(jwtAuthenticationSessionService.authenticate(TEST_TOKEN))
+            when(jwtAuthenticationSessionService.authenticate(TEST_TOKEN, TEST_USER_AGENT))
                     .thenThrow(new UserAgentSessionExpiredException("Token has expired"));
 
             // when & then
@@ -176,7 +176,7 @@ class JwtAuthenticationProviderTest {
             // given
             JwtAuthentication jwtAuthentication = new JwtAuthentication(TEST_TOKEN, TEST_USER_AGENT);
 
-            when(jwtAuthenticationSessionService.authenticate(TEST_TOKEN))
+            when(jwtAuthenticationSessionService.authenticate(TEST_TOKEN, TEST_USER_AGENT))
                     .thenThrow(new UserAgentSessionRevokedException("Token has been revoked"));
 
             // when & then
@@ -193,7 +193,7 @@ class JwtAuthenticationProviderTest {
             // given
             JwtAuthentication jwtAuthentication = new JwtAuthentication(TEST_TOKEN, TEST_USER_AGENT);
 
-            when(jwtAuthenticationSessionService.authenticate(TEST_TOKEN))
+            when(jwtAuthenticationSessionService.authenticate(TEST_TOKEN, TEST_USER_AGENT))
                     .thenReturn(TEST_USER_ID);
             when(userDetailsService.loadUserByUsername(TEST_USER_ID))
                     .thenThrow(new UsernameNotFoundException("User not found"));
@@ -203,7 +203,7 @@ class JwtAuthenticationProviderTest {
                     () -> jwtAuthenticationProvider.authenticate(jwtAuthentication));
 
             assertEquals("User not found", exception.getMessage());
-            verify(jwtAuthenticationSessionService, times(1)).authenticate(TEST_TOKEN);
+            verify(jwtAuthenticationSessionService, times(1)).authenticate(TEST_TOKEN, TEST_USER_AGENT);
             verify(userDetailsService, times(1)).loadUserByUsername(TEST_USER_ID);
         }
     }
@@ -264,8 +264,8 @@ class JwtAuthenticationProviderTest {
             UserDetails userDetails1 = createTestUserDetails(userId1, List.of(new SimpleGrantedAuthority("ROLE_USER")));
             UserDetails userDetails2 = createTestUserDetails(userId2, List.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
 
-            when(jwtAuthenticationSessionService.authenticate(token1)).thenReturn(userId1);
-            when(jwtAuthenticationSessionService.authenticate(token2)).thenReturn(userId2);
+            when(jwtAuthenticationSessionService.authenticate(token1, TEST_USER_AGENT)).thenReturn(userId1);
+            when(jwtAuthenticationSessionService.authenticate(token2, TEST_USER_AGENT)).thenReturn(userId2);
             when(userDetailsService.loadUserByUsername(userId1)).thenReturn(userDetails1);
             when(userDetailsService.loadUserByUsername(userId2)).thenReturn(userDetails2);
 
@@ -292,8 +292,8 @@ class JwtAuthenticationProviderTest {
 
             UserDetails userDetails = createTestUserDetails(TEST_USER_ID, List.of());
 
-            when(jwtAuthenticationSessionService.authenticate(TEST_TOKEN)).thenReturn(TEST_USER_ID);
-            when(jwtAuthenticationSessionService.authenticate("another.token")).thenReturn(TEST_USER_ID);
+            when(jwtAuthenticationSessionService.authenticate(TEST_TOKEN, userAgent1)).thenReturn(TEST_USER_ID);
+            when(jwtAuthenticationSessionService.authenticate("another.token", userAgent2)).thenReturn(TEST_USER_ID);
             when(userDetailsService.loadUserByUsername(TEST_USER_ID)).thenReturn(userDetails);
 
             // when
@@ -319,7 +319,7 @@ class JwtAuthenticationProviderTest {
             JwtAuthentication jwtAuthentication = new JwtAuthentication(TEST_TOKEN, TEST_USER_AGENT);
             UserDetails userDetails = createTestUserDetails(TEST_USER_ID, List.of());
 
-            when(jwtAuthenticationSessionService.authenticate(TEST_TOKEN))
+            when(jwtAuthenticationSessionService.authenticate(TEST_TOKEN, TEST_USER_AGENT))
                     .thenReturn(TEST_USER_ID);
             when(userDetailsService.loadUserByUsername(TEST_USER_ID))
                     .thenReturn(userDetails);
@@ -341,7 +341,7 @@ class JwtAuthenticationProviderTest {
             JwtAuthentication jwtAuthentication = new JwtAuthentication(TEST_TOKEN, TEST_USER_AGENT);
             UserDetails userDetails = createTestUserDetails(specialUserId, List.of());
 
-            when(jwtAuthenticationSessionService.authenticate(TEST_TOKEN))
+            when(jwtAuthenticationSessionService.authenticate(TEST_TOKEN, TEST_USER_AGENT))
                     .thenReturn(specialUserId);
             when(userDetailsService.loadUserByUsername(specialUserId))
                     .thenReturn(userDetails);
