@@ -1,0 +1,23 @@
+services:
+  core-db:
+    image: postgres:18.3-alpine3.23
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=mydb
+      - PGDATA=/pgdata
+    ports:
+      - "5431:5432"
+    volumes:
+      - ./core-db-data:/pgdata
+  telemetry-db:
+    image: timescale/timescaledb:latest-pg18
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=mydb
+      - PGDATA=/pgdata
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./telemetry-db-data:/pgdata
