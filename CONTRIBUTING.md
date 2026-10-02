@@ -30,6 +30,62 @@ before implementing behavior, and record decisions in the relevant documentation
 Maintain requirements, architecture, and lifecycle rules alongside the code that
 implements them.
 
+## Issue tracking
+
+Use GitHub Issues as the project work tracker. Before reporting a problem or
+proposing work, search for an existing issue and add relevant evidence there.
+Keep each new issue focused on one independently reviewable outcome.
+
+Choose a template from the repository's **Issues → New issue** page:
+
+- [Bug report](.github/ISSUE_TEMPLATE/bug_report.md): reproduction, expected and
+  actual behavior, environment, and acceptance criteria.
+- [Feature request](.github/ISSUE_TEMPLATE/feature_request.md): audience, intended
+  outcome, scope, alternatives, and verifiable acceptance criteria.
+- [Maintenance or documentation task](.github/ISSUE_TEMPLATE/task.md): bounded
+  work items, completion criteria, and verification.
+
+Blank issues remain available for work that does not fit these templates. These
+are Markdown prompts, not enforced form fields. Replace prompts with concrete
+information, state unknowns, and omit sensitive data from examples and logs.
+
+### Repository setup
+
+Enable Issues in the GitHub repository's settings and include
+`.github/ISSUE_TEMPLATE/` on its default branch. The templates use no fixed
+repository URLs, custom labels, or assignees. No bot, token, or additional service
+is required. See GitHub's
+[template configuration guide](https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/configuring-issue-templates-for-your-repository).
+
+After publishing, open **New issue** and confirm that all three templates appear
+and that creating a blank issue remains available. Local validation cannot verify
+repository settings or the hosted chooser. On another hosting platform, use the
+same Markdown bodies in its tracker and document that location in the README.
+
+### Triage and completion
+
+1. **Triage:** a maintainer checks scope, duplicates, reproduction or rationale,
+   and acceptance criteria. Request missing information in the issue. Close
+   duplicates or declined work with a reason and a link where applicable.
+2. **Ready:** record agreement on the intended outcome and acceptance criteria in
+   the issue. Link applicable REQ, UC, or ADR records; an issue does not replace
+   their definitions or establish approval merely by being opened.
+3. **In progress:** assign the person doing the work when possible and link the
+   implementation branch or draft PR. Record blockers and dependent issue links
+   in the issue so progress remains visible.
+4. **In review:** link the PR and summarize verification against the acceptance
+   criteria. Use `Closes #123` in the PR body only when it fully resolves that
+   issue; use `Refs #123` for partial or related work. Replace example numbers
+   with actual issue numbers.
+5. **Done:** close the issue after its acceptance criteria are met and the change
+   is merged, or document the resolution for work without a PR. Keep unresolved
+   scope open or link separate follow-up issues. Reopen if the problem persists.
+
+These stages describe the workflow; they do not require custom GitHub status
+fields. Use issue comments, assignees, linked PRs, and open/closed state. A project
+may add labels, milestones, or a board later if its workload needs them. Small
+fixes may go directly to a PR when a separate issue would duplicate its description.
+
 ## Local development
 
 The repository must pin a Rust toolchain supporting edition 2024 and the

@@ -10,6 +10,11 @@ Why is this change necessary?
 Link to an issue/use case if applicable.
 -->
 
+## Related Issues
+
+<!-- Use Closes #123 only for an issue fully resolved by this PR; use Refs #123
+for partial or related work. Replace example numbers. Write None if no issue exists. -->
+
 ## Changes Made
 
 <!-- List the important changes. Keep this at the behavioral/design level rather than listing every file changed. -->

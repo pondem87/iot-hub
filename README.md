@@ -10,3 +10,9 @@
 - [o] [Data architecture](docs/004-data-architecture.md)
 - [o] [Application architecture](docs/005-application-architecture.md)
 - [o] [Technology architecture](docs/006-technology-architecture.md)
+
+## Issue tracking
+
+Use GitHub Issues for bug reports, feature requests, and maintenance or
+documentation tasks. Follow the [issue tracking workflow](CONTRIBUTING.md#issue-tracking)
+for templates, acceptance criteria, triage, and completion.

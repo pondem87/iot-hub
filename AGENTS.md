@@ -30,6 +30,11 @@ placeholders, missing implementations, or noncompliant examples as requirements.
 
 ## Implement focused changes
 
+Follow the [issue tracking workflow](CONTRIBUTING.md#issue-tracking) when working
+from an issue. Read its acceptance criteria and linked requirements before making
+changes; report unresolved criteria and reference the issue in the PR. Do not
+claim an issue is resolved while its acceptance criteria remain unmet.
+
 Complete the work authorized by the task, including related tests and
 documentation. Resolve routine implementation choices independently. Ask for
 clarification when missing business rules or conflicting requirements materially
