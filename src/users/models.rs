@@ -50,6 +50,8 @@ pub struct BarredUser;
 
 pub struct DeletedUser;
 
+pub struct AnyUser;
+
 /// Represents a user in the system.
 #[derive(Debug, Clone, sqlx::FromRow)]
 pub struct User<State> {

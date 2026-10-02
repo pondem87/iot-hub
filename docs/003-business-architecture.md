@@ -1,214 +1,1640 @@
-# Business Architecture
+# Business architecture
 
-# Capability Mapping
+## 1 Purpose and sources
 
-- 1 User management
-    - 1.1 user definition - ability to identify a user and create and retrieve user records
-    - 1.2 user profile management - ability to obtain, maintain and set user attributes
-    - 1.3 user preference management - abiltiy to obtain, maintain and enforce users needs
-    - 1.4 user state management - ability to determine and update user state
-    - 1.5 user account management - ability to activate/disable and deleter user account
-    - 1.6 user matching - ability to associate a user with other business objects
-        - 1.6.1 user/subscription matching
-    - 1.7 user contacts management - ability to add, retrieve, verify and delete contacts
-        - 1.7.1 contact definition - identify, create and retrieve contacts
-        - 1.7.2 contact type management - ability to determine or set contact type
-        - 1.7.3 contact state management - ability to determine, set and change contact state
+This architecture translates [detailed requirements](002-detailed-requirements.md)
+into business abilities, information, and stakeholder value using the
+[documentation methodology](000-docs-guide.md#31-capabilities-and-information).
+It preserves the original maps and their intent while normalizing identifiers.
+Definitions inferred from existing capability names are derived design, not new
+permissions or lifecycle policy. Capabilities previously named only in value
+stages are now explicitly registered so cross-mappings have identifiable targets.
 
-- 2 Organisation management
-    - 1.1 organisation definition - ability to identify an organisation, create and retrieve organisation
-    - 1.2 organisation superuser management - ability to set and retrieve organisation superuser
-    - 1.3 organisation membership management - ability to add, remove and list organisation users
-        - 1.3.2.1 organisation member list management - ability to add and remove members from organisation
-        - 1.3.2.1 member access management - ability to add and remove member's organisation access constraints
-    - 1.4 organisation access management
-        - 1.4.1 organisation access constraints definition - ability to create, retrieve and delete an access constraint
-        - 1.4.2 organisation access constraints interpretation - ability to understand access limits
-        - 1.4.3 organisation access constraints enforcement - ability to enforce access limits
-    - 1.5 organisation limits management
-        - 1.5.1 organisation limit definition - ability to create, retrieve and delete a limit
-        - 1.5.2 organisation limit interpretation - ability to understand a limit
-        - 1.5.3 organisation limit enforcement - ability to enforce a limit
-    - 1.6 organisation matching - ability to associate to other business objects
-        - organisation/user matching
-        - organisation/subscription matching
+The maps describe the business rather than implementation completeness. Missing
+coverage and unresolved classifications are listed in section 6.
 
-- 3 Verification code management
-    - 3.1 verification code definition - ability to generate, store and retrieve verification codes
-    - 3.2 verification code validation - ability to determine if a sent code matches the stored code and that it is still valid
-    - 3.3 verification code cleanup - ability to clean up codes that have already been used or are not valid
-    - 3.4 verification code matching - ability to associate a code with other business objects
-        - 3.4.1 verification code/user matching
-        - 3.4.2 verification code/contact matching
+## 2 Capability map
 
-- 4 Organisation invitation management - ability to provide users with a mechanism allowing them to join the organisation and to track and revoke the issuance of such mechanism to users
-    - 4.1 invitation definition - ability to create and retrieve an invitation
-    - 4.2 invitation revocation - ability to revoke an invitation to a specified user
-    - 4.3 invitation access management - ability to control access to invitations
-        - 4.3.1 invitation access constraints definition - ability to create, retrieve and delete an access constraint
-        - 4.3.2 invitation access constraints interpretation - ability to understand access constraint
-        - 4.3.3 invitation access constraints enforcement - ability to enforce access constraint
-    - 4.4 invitation matching - ability to associate an invitation with other business objects
-        - 4.4.1 invitation/organisation matching
-        - 4.4.2 invitation/user matching
+Each dotted CAP identifier belongs to the parent obtained by removing its final
+segment. Top-level records have no parent. Sources cite requirements, value streams,
+or open decisions; section 7 preserves original labels for all records.
 
-- 5 Event management - ability to create, capture, interpret and distribute and route events and register publishers and subscribers emitted by business processes
-    - 5.1 event definition - ability to create events
-    - 5.2 event capture - ability to capture events and forward to subscriber
-    - 5.3 event distribution - ability to distribute events from publishers to subscribers
-    - 5.4 event publisher registration
-    - 5.5 event subscriber registration
+### 2.1 User Management
 
-- 6 Notification management - ability to create and determine which notifications to send to user and which messaging channel to use based on user preferences and permissions
-    - 6.1 notification definition - ability to create notification
-    - 6.2 notification dispatch determination - ability to determine whether to dispatch notification
-    - 6.3 notification channel determination - ability to determine the channel to use to send notification
-    - 6.4 notification content construction - ability to make the contents of the notification message
+<a id="cap-1"></a>
 
-- 6 Message management - ability to create, structure, route and intepret communications media to and from users
-    - 6.1 message definition
-    - 6.2 message capture
-    - 6.3 message structuring
-    - 6.4 message dispatch
-    - 6.5 message channel determination
+**CAP-1**
 
-- 7 Channel management - ability to send and recieve messages from a communication medium
+- **Name:** User Management
+- **Business ability or outcome:** Identify people using the service and maintain their
+  accounts, attributes, contacts, and associations.
+- **Source:** [REQ-2.1.1](002-detailed-requirements.md#req-2.1.1),
+  [REQ-2.2.6](002-detailed-requirements.md#req-2.2.6),
+  [REQ-2.4.1](002-detailed-requirements.md#req-2.4.1)
 
-- 8 Whatsapp api management - ability to convey messages to and from users via whatsapp messages api
+<a id="cap-1.1"></a>
 
-- 9 Audit log management - ability create, store and retrieve audit logs
+**CAP-1.1**
 
+- **Name:** User Definition
+- **Business ability or outcome:** Identify a user and create and retrieve their record.
+- **Source:** [REQ-2.1.1](002-detailed-requirements.md#req-2.1.1)
 
-# Informatoion Map
+<a id="cap-1.2"></a>
 
-- key:
-    - [Number] Information concept
-        - Information concept category - primary or secondary
-        - Information concept definition
-        - Information concept types
-        - Related Information concepts
-        - Information concept states
+**CAP-1.2**
 
-- 1 User
-    - category: primary
-    - definition: a person using the service
-    - types: superuser, staff, customer
-    - related: subscription
-    - states: unverified, active, inactive, barred, deleted
+- **Name:** User Profile Management
+- **Business ability or outcome:** Obtain, maintain, and set attributes describing a user.
+- **Source:** [REQ-2.2.6](002-detailed-requirements.md#req-2.2.6)
 
-    - 1.1 User Profile
-        - category: secondary
-        - definition: characteristics describing a user
-        - types: none
-        - related: none
-        - states: none
+<a id="cap-1.3"></a>
 
-    - 1.2 User Preferences
-        - category: secondary
-        - definition: set of parameters representing user needs
-        - types: none
-        - related: none
-        - states: none
+**CAP-1.3**
 
-    - 1.3 User Contact
-        - category: secondary
-        - definition: identifier for user in a given communication channel
-        - types: phonenumber, emailaddress
-        - related: channel
-        - states: unverified, active, disabled
+- **Name:** User Preference Management
+- **Business ability or outcome:** Obtain, maintain, and enforce a user’s expressed needs.
+- **Source:** [REQ-2.3.1](002-detailed-requirements.md#req-2.3.1),
+  [REQ-2.3.2](002-detailed-requirements.md#req-2.3.2)
 
-- 2 Organisation
-    - category: primary
-    - definition: a container for assets belonging to the one entity
-    - types: none
-    - related: subscription
-    - states: active, inactive, barred, deleted
+<a id="cap-1.4"></a>
 
-    - 1.1 Organisation access constraint
-        - category: secondary
-        - definition: a policy determining who can access organisation resources
-        - types: object, attribute
-        - related: none
-        - states: none
+**CAP-1.4**
 
-    - 1.2 Organisation limit
-        - category: secondary
-        - definition: a policy determining limits on organisation resources
-        - types: none
-        - related: none
-        - states: none
+- **Name:** User State Management
+- **Business ability or outcome:** Determine and update a user’s lifecycle condition.
+- **Source:** [REQ-2.2.2](002-detailed-requirements.md#req-2.2.2),
+  [REQ-2.4.1](002-detailed-requirements.md#req-2.4.1)
 
-    - 1.3 Membership invitation
-        - category: secondary
-        - definition: an 
+<a id="cap-1.5"></a>
 
-- 3 Verification code
-    - category: primary
-    - definition: a code used to verify authenticity of a request or contact verification
-    - types: otp
-    - related: user, contact
-    - states: ready, used, expired
+**CAP-1.5**
 
-- 4 Invitation
-    - category: primary
-    - definition: mechanism for allowing users to join an organisation
-    - types: none
-    - related: user, organisation
-    - states: active, used, revoked
+- **Name:** User Account Management
+- **Business ability or outcome:** Activate, disable, and delete an account under the
+  applicable business rules.
+- **Source:** [REQ-2.4.1](002-detailed-requirements.md#req-2.4.1),
+  [OPEN-003-2](003-business-architecture.md#open-003-2)
 
+<a id="cap-1.6"></a>
 
-# Value Map
+**CAP-1.6**
 
-## 1. Register user value stream
+- **Name:** User Matching
+- **Business ability or outcome:** Associate a user with other business objects.
+- **Source:** [OPEN-003-4](003-business-architecture.md#open-003-4)
 
-triggering stakeholder: customer (user)
-value proposition: customer has verified user account
+<a id="cap-1.6.1"></a>
 
-### value stream stages
+**CAP-1.6.1**
 
-submit user details ---> accept user details ---> create user account ---> initialise verification ---> verify user
+- **Name:** User/Subscription Matching
+- **Business ability or outcome:** Associate a user with the entitlement arrangement that
+  applies to them.
+- **Source:** [REQ-1.1.4](002-detailed-requirements.md#req-1.1.4),
+  [OPEN-002-4](002-detailed-requirements.md#open-002-4)
 
-### Value stream/capability cross-mapping
+<a id="cap-1.7"></a>
 
-submit user details
-- submission management <= input data capture, form submission, data schema determination and validation
+**CAP-1.7**
 
-accept user details
-- submission management <= data schema validation, phone number validation, name validation, password validation
+- **Name:** User Contact Management
+- **Business ability or outcome:** Add, retrieve, verify, and delete ways to reach a user.
+- **Source:** [REQ-2.2.2](002-detailed-requirements.md#req-2.2.2),
+  [REQ-2.2.5](002-detailed-requirements.md#req-2.2.5)
 
-create user account
-- user management <= user definition <= user creation
-- event management <= event definition <= event creation, event dispatch, event capture
+<a id="cap-1.7.1"></a>
 
-initialise verification
-- verification code generation
-- event management <= event definition <= event creation, event dispatch, event capture
+**CAP-1.7.1**
 
-verify user
-- submission management
-- verification code validation
-- user management <= user state management
-- event management <= event definition <= event creation, event dispatch, event capture
+- **Name:** User Contact Definition
+- **Business ability or outcome:** Identify, create, and retrieve a way to reach a user.
+- **Source:** [REQ-2.2.5](002-detailed-requirements.md#req-2.2.5)
 
+<a id="cap-1.7.2"></a>
 
-## 2. Notify user
+**CAP-1.7.2**
 
-### value stream stages
+- **Name:** User Contact Type Management
+- **Business ability or outcome:** Determine and set the kind of a user’s contact method.
+- **Source:** [REQ-2.2.2](002-detailed-requirements.md#req-2.2.2),
+  [REQ-2.2.5](002-detailed-requirements.md#req-2.2.5)
 
-receive notification request ---> prepare message ---> dispatch message
+<a id="cap-1.7.3"></a>
 
-### Value stream/capability cross-mapping
+**CAP-1.7.3**
 
-receive notification request
-- event management <= event definition <= event creation, event dispatch, event capture
-- notification management <= notification type determination, notification preference determination, notification preference enforcement
+- **Name:** User Contact State Management
+- **Business ability or outcome:** Determine and change the lifecycle condition of a
+  contact method.
+- **Source:** [REQ-2.2.2](002-detailed-requirements.md#req-2.2.2),
+  [REQ-2.2.5](002-detailed-requirements.md#req-2.2.5)
 
-prepare
-- message management <= message creation, message type determination, channel determination, message dispatch, message status tracking
+### 2.2 Organisation Management
 
-dispatch message
-- channel management <= channel identification, channel configuration, message dispatch
-- whatsapp api management <= api configuration, message dispatch
+<a id="cap-2"></a>
 
+**CAP-2**
 
-## 3. Onboard user
+- **Name:** Organisation Management
+- **Business ability or outcome:** Identify and maintain an organisation, its membership,
+  access, limits, and associations.
+- **Source:** [REQ-1.1.1](002-detailed-requirements.md#req-1.1.1),
+  [REQ-1.2.3](002-detailed-requirements.md#req-1.2.3)
+
+<a id="cap-2.1"></a>
+
+**CAP-2.1**
+
+- **Name:** Organisation Definition
+- **Business ability or outcome:** Identify, create, and retrieve an organisation.
+- **Source:** [REQ-1.1.1](002-detailed-requirements.md#req-1.1.1)
+
+<a id="cap-2.2"></a>
+
+**CAP-2.2**
+
+- **Name:** Organisation Superuser Management
+- **Business ability or outcome:** Set and retrieve the user with ownership responsibility
+  for an organisation.
+- **Source:** [REQ-1.1.2](002-detailed-requirements.md#req-1.1.2),
+  [REQ-1.1.3](002-detailed-requirements.md#req-1.1.3)
+
+<a id="cap-2.3"></a>
+
+**CAP-2.3**
+
+- **Name:** Organisation Membership Management
+- **Business ability or outcome:** Add, remove, and list people belonging to an
+  organisation.
+- **Source:** [REQ-1.2.3](002-detailed-requirements.md#req-1.2.3)
+
+<a id="cap-2.3.1"></a>
+
+**CAP-2.3.1**
+
+- **Name:** Organisation Member List Management
+- **Business ability or outcome:** Maintain and list the people belonging to an
+  organisation.
+- **Source:** [REQ-1.2.3](002-detailed-requirements.md#req-1.2.3)
+
+<a id="cap-2.3.2"></a>
+
+**CAP-2.3.2**
+
+- **Name:** Organisation Member Access Management
+- **Business ability or outcome:** Maintain the access constraints applying to an
+  organisation member.
+- **Source:** [REQ-1.3.1](002-detailed-requirements.md#req-1.3.1)
+
+<a id="cap-2.4"></a>
+
+**CAP-2.4**
+
+- **Name:** Organisation Access Management
+- **Business ability or outcome:** Determine and control access to organisation resources.
+- **Source:** [REQ-1.3.1](002-detailed-requirements.md#req-1.3.1),
+  [REQ-1.3.2](002-detailed-requirements.md#req-1.3.2)
+
+<a id="cap-2.4.1"></a>
+
+**CAP-2.4.1**
+
+- **Name:** Organisation Access Constraint Definition
+- **Business ability or outcome:** Create, retrieve, and delete a policy restricting
+  organisation resource access.
+- **Source:** [REQ-1.3.1](002-detailed-requirements.md#req-1.3.1)
+
+<a id="cap-2.4.2"></a>
+
+**CAP-2.4.2**
+
+- **Name:** Organisation Access Constraint Interpretation
+- **Business ability or outcome:** Interpret the limits imposed by an organisation access
+  policy.
+- **Source:** [REQ-1.3.1](002-detailed-requirements.md#req-1.3.1)
+
+<a id="cap-2.4.3"></a>
+
+**CAP-2.4.3**
+
+- **Name:** Organisation Access Constraint Enforcement
+- **Business ability or outcome:** Apply organisation access restrictions to an attempted
+  operation.
+- **Source:** [REQ-1.3.1](002-detailed-requirements.md#req-1.3.1),
+  [REQ-1.3.2](002-detailed-requirements.md#req-1.3.2)
+
+<a id="cap-2.5"></a>
+
+**CAP-2.5**
+
+- **Name:** Organisation Limit Management
+- **Business ability or outcome:** Determine and apply limits on organisation resources
+  and service continuity.
+- **Source:** [REQ-1.4.1](002-detailed-requirements.md#req-1.4.1),
+  [REQ-1.4.2](002-detailed-requirements.md#req-1.4.2)
+
+<a id="cap-2.5.1"></a>
+
+**CAP-2.5.1**
+
+- **Name:** Organisation Limit Definition
+- **Business ability or outcome:** Create, retrieve, and delete a limit applying to
+  organisation resources.
+- **Source:** [REQ-1.4.1](002-detailed-requirements.md#req-1.4.1)
+
+<a id="cap-2.5.2"></a>
+
+**CAP-2.5.2**
+
+- **Name:** Organisation Limit Interpretation
+- **Business ability or outcome:** Interpret an organisation resource limit.
+- **Source:** [REQ-1.4.1](002-detailed-requirements.md#req-1.4.1),
+  [REQ-1.4.2](002-detailed-requirements.md#req-1.4.2)
+
+<a id="cap-2.5.3"></a>
+
+**CAP-2.5.3**
+
+- **Name:** Organisation Limit Enforcement
+- **Business ability or outcome:** Apply a resource or continuity limit to organisation
+  use.
+- **Source:** [REQ-1.4.1](002-detailed-requirements.md#req-1.4.1),
+  [REQ-1.4.2](002-detailed-requirements.md#req-1.4.2)
+
+<a id="cap-2.6"></a>
+
+**CAP-2.6**
+
+- **Name:** Organisation Matching
+- **Business ability or outcome:** Associate an organisation with other business objects.
+- **Source:** [REQ-1.1.2](002-detailed-requirements.md#req-1.1.2),
+  [REQ-1.2.1](002-detailed-requirements.md#req-1.2.1)
+
+<a id="cap-2.6.1"></a>
+
+**CAP-2.6.1**
+
+- **Name:** Organisation/User Matching
+- **Business ability or outcome:** Associate an organisation with a person belonging to
+  it.
+- **Source:** [REQ-1.2.3](002-detailed-requirements.md#req-1.2.3)
+
+<a id="cap-2.6.2"></a>
+
+**CAP-2.6.2**
+
+- **Name:** Organisation/Subscription Matching
+- **Business ability or outcome:** Associate an organisation with its applicable
+  entitlement arrangement.
+- **Source:** [REQ-1.2.1](002-detailed-requirements.md#req-1.2.1),
+  [OPEN-002-4](002-detailed-requirements.md#open-002-4)
+
+### 2.3 Verification Code Management
+
+<a id="cap-3"></a>
+
+**CAP-3**
+
+- **Name:** Verification Code Management
+- **Business ability or outcome:** Generate, validate, clear, and associate proofs used
+  for account and contact operations.
+- **Source:** [REQ-3.1.1](002-detailed-requirements.md#req-3.1.1),
+  [REQ-3.2.1](002-detailed-requirements.md#req-3.2.1),
+  [REQ-3.3.1](002-detailed-requirements.md#req-3.3.1)
+
+<a id="cap-3.1"></a>
+
+**CAP-3.1**
+
+- **Name:** Verification Code Definition
+- **Business ability or outcome:** Generate, store, and retrieve a code used to verify a
+  request.
+- **Source:** [REQ-3.1.1](002-detailed-requirements.md#req-3.1.1)
+
+<a id="cap-3.2"></a>
+
+**CAP-3.2**
+
+- **Name:** Verification Code Validation
+- **Business ability or outcome:** Determine whether a submitted code matches and remains
+  within its validity period.
+- **Source:** [REQ-3.2.1](002-detailed-requirements.md#req-3.2.1)
+
+<a id="cap-3.3"></a>
+
+**CAP-3.3**
+
+- **Name:** Verification Code Cleanup
+- **Business ability or outcome:** Clear proofs that have been used or are no longer
+  valid.
+- **Source:** [REQ-3.3.1](002-detailed-requirements.md#req-3.3.1)
+
+<a id="cap-3.4"></a>
+
+**CAP-3.4**
+
+- **Name:** Verification Code Matching
+- **Business ability or outcome:** Associate a verification code with the business object
+  to which it applies.
+- **Source:** [REQ-3.1.1](002-detailed-requirements.md#req-3.1.1)
+
+<a id="cap-3.4.1"></a>
+
+**CAP-3.4.1**
+
+- **Name:** Verification Code/User Matching
+- **Business ability or outcome:** Associate a verification code with its user.
+- **Source:** [REQ-2.1.2](002-detailed-requirements.md#req-2.1.2)
+
+<a id="cap-3.4.2"></a>
+
+**CAP-3.4.2**
+
+- **Name:** Verification Code/Contact Matching
+- **Business ability or outcome:** Associate a verification code with its contact method.
+- **Source:** [REQ-2.2.2](002-detailed-requirements.md#req-2.2.2),
+  [REQ-2.2.5](002-detailed-requirements.md#req-2.2.5)
+
+### 2.4 Organisation Invitation Management
+
+<a id="cap-4"></a>
+
+**CAP-4**
+
+- **Name:** Organisation Invitation Management
+- **Business ability or outcome:** Issue, track, and revoke mechanisms for users to join
+  an organisation.
+- **Source:** [REQ-1.2.3](002-detailed-requirements.md#req-1.2.3)
+
+<a id="cap-4.1"></a>
+
+**CAP-4.1**
+
+- **Name:** Invitation Definition
+- **Business ability or outcome:** Create and retrieve a mechanism for joining an
+  organisation.
+- **Source:** [REQ-1.2.3](002-detailed-requirements.md#req-1.2.3)
+
+<a id="cap-4.2"></a>
+
+**CAP-4.2**
+
+- **Name:** Invitation Revocation
+- **Business ability or outcome:** Withdraw an issued invitation for a specified user.
+- **Source:** [REQ-1.2.3](002-detailed-requirements.md#req-1.2.3)
+
+<a id="cap-4.3"></a>
+
+**CAP-4.3**
+
+- **Name:** Invitation Access Management
+- **Business ability or outcome:** Control access to invitations.
+- **Source:** [REQ-1.3.2](002-detailed-requirements.md#req-1.3.2)
+
+<a id="cap-4.3.1"></a>
+
+**CAP-4.3.1**
+
+- **Name:** Invitation Access Constraint Definition
+- **Business ability or outcome:** Create, retrieve, and delete an invitation access
+  restriction.
+- **Source:** [REQ-1.3.2](002-detailed-requirements.md#req-1.3.2)
+
+<a id="cap-4.3.2"></a>
+
+**CAP-4.3.2**
+
+- **Name:** Invitation Access Constraint Interpretation
+- **Business ability or outcome:** Interpret an invitation access restriction.
+- **Source:** [REQ-1.3.2](002-detailed-requirements.md#req-1.3.2)
+
+<a id="cap-4.3.3"></a>
+
+**CAP-4.3.3**
+
+- **Name:** Invitation Access Constraint Enforcement
+- **Business ability or outcome:** Apply an invitation access restriction.
+- **Source:** [REQ-1.3.2](002-detailed-requirements.md#req-1.3.2)
+
+<a id="cap-4.4"></a>
+
+**CAP-4.4**
+
+- **Name:** Invitation Matching
+- **Business ability or outcome:** Associate an invitation with the business objects
+  involved in joining.
+- **Source:** [REQ-1.2.3](002-detailed-requirements.md#req-1.2.3)
+
+<a id="cap-4.4.1"></a>
+
+**CAP-4.4.1**
+
+- **Name:** Invitation/Organisation Matching
+- **Business ability or outcome:** Associate an invitation with the organisation to be
+  joined.
+- **Source:** [REQ-1.2.3](002-detailed-requirements.md#req-1.2.3)
+
+<a id="cap-4.4.2"></a>
+
+**CAP-4.4.2**
+
+- **Name:** Invitation/User Matching
+- **Business ability or outcome:** Associate an invitation with the intended user.
+- **Source:** [REQ-1.2.3](002-detailed-requirements.md#req-1.2.3)
+
+### 2.5 Event Management
+
+<a id="cap-5"></a>
+
+**CAP-5**
+
+- **Name:** Event Management
+- **Business ability or outcome:** Create, capture, interpret, distribute, and route
+  occurrences and register their publishers and subscribers.
+- **Source:** [OPEN-003-4](003-business-architecture.md#open-003-4)
+
+<a id="cap-5.1"></a>
+
+**CAP-5.1**
+
+- **Name:** Event Definition
+- **Business ability or outcome:** Create a representation of a business occurrence.
+- **Source:** [VS-1](003-business-architecture.md#vs-1)
+
+<a id="cap-5.2"></a>
+
+**CAP-5.2**
+
+- **Name:** Event Capture
+- **Business ability or outcome:** Receive an occurrence and forward it to subscribers.
+- **Source:** [VS-1](003-business-architecture.md#vs-1)
+
+<a id="cap-5.3"></a>
+
+**CAP-5.3**
+
+- **Name:** Event Distribution
+- **Business ability or outcome:** Distribute occurrences from publishers to subscribers.
+- **Source:** [VS-1](003-business-architecture.md#vs-1)
+
+<a id="cap-5.4"></a>
+
+**CAP-5.4**
+
+- **Name:** Event Publisher Registration
+- **Business ability or outcome:** Register an originator of business occurrences.
+- **Source:** [OPEN-003-4](003-business-architecture.md#open-003-4)
+
+<a id="cap-5.5"></a>
+
+**CAP-5.5**
+
+- **Name:** Event Subscriber Registration
+- **Business ability or outcome:** Register a recipient of business occurrences.
+- **Source:** [OPEN-003-4](003-business-architecture.md#open-003-4)
+
+### 2.6 Notification Management
+
+<a id="cap-6"></a>
+
+**CAP-6**
+
+- **Name:** Notification Management
+- **Business ability or outcome:** Determine what to tell a user and through which
+  channel, subject to preferences and permissions.
+- **Source:** [REQ-2.3.1](002-detailed-requirements.md#req-2.3.1),
+  [REQ-2.3.2](002-detailed-requirements.md#req-2.3.2)
+
+<a id="cap-6.1"></a>
+
+**CAP-6.1**
+
+- **Name:** Notification Definition
+- **Business ability or outcome:** Create a notice intended for a user.
+- **Source:** [VS-2](003-business-architecture.md#vs-2)
+
+<a id="cap-6.2"></a>
+
+**CAP-6.2**
+
+- **Name:** Notification Dispatch Determination
+- **Business ability or outcome:** Decide whether to send a notice under the applicable
+  preferences and permissions.
+- **Source:** [REQ-2.3.1](002-detailed-requirements.md#req-2.3.1)
+
+<a id="cap-6.3"></a>
+
+**CAP-6.3**
+
+- **Name:** Notification Channel Determination
+- **Business ability or outcome:** Choose the communication medium for a notice.
+- **Source:** [REQ-2.3.2](002-detailed-requirements.md#req-2.3.2)
+
+<a id="cap-6.4"></a>
+
+**CAP-6.4**
+
+- **Name:** Notification Content Construction
+- **Business ability or outcome:** Prepare the information to communicate in a notice.
+- **Source:** [VS-2](003-business-architecture.md#vs-2)
+
+<a id="cap-6.5"></a>
+
+**CAP-6.5**
+
+- **Name:** Notification Type Determination
+- **Business ability or outcome:** Determine the kind of notice being requested.
+- **Source:** [VS-2](003-business-architecture.md#vs-2)
+
+### 2.7 Message Management
+
+<a id="cap-7"></a>
+
+**CAP-7**
+
+- **Name:** Message Management
+- **Business ability or outcome:** Create, structure, route, and interpret communications
+  to and from users.
+- **Source:** [VS-2](003-business-architecture.md#vs-2)
+
+<a id="cap-7.1"></a>
+
+**CAP-7.1**
+
+- **Name:** Message Definition
+- **Business ability or outcome:** Create a communication for a recipient.
+- **Source:** [VS-2](003-business-architecture.md#vs-2)
+
+<a id="cap-7.2"></a>
+
+**CAP-7.2**
+
+- **Name:** Message Capture
+- **Business ability or outcome:** Receive a communication from a sender.
+- **Source:** [VS-2](003-business-architecture.md#vs-2)
+
+<a id="cap-7.3"></a>
+
+**CAP-7.3**
+
+- **Name:** Message Structuring
+- **Business ability or outcome:** Determine the form and type of a communication.
+- **Source:** [VS-2](003-business-architecture.md#vs-2)
+
+<a id="cap-7.4"></a>
+
+**CAP-7.4**
+
+- **Name:** Message Dispatch
+- **Business ability or outcome:** Send a prepared communication.
+- **Source:** [VS-2](003-business-architecture.md#vs-2)
+
+<a id="cap-7.5"></a>
+
+**CAP-7.5**
+
+- **Name:** Message Channel Determination
+- **Business ability or outcome:** Determine the medium through which to send a
+  communication.
+- **Source:** [VS-2](003-business-architecture.md#vs-2)
+
+<a id="cap-7.6"></a>
+
+**CAP-7.6**
+
+- **Name:** Message Status Tracking
+- **Business ability or outcome:** Track the progress of a communication toward its
+  delivery outcome.
+- **Source:** [VS-2](003-business-architecture.md#vs-2)
+
+### 2.8 Channel Management
+
+<a id="cap-8"></a>
+
+**CAP-8**
+
+- **Name:** Channel Management
+- **Business ability or outcome:** Send and receive communications through a chosen
+  medium.
+- **Source:** [VS-2](003-business-architecture.md#vs-2)
+
+<a id="cap-8.1"></a>
+
+**CAP-8.1**
+
+- **Name:** Channel Identification
+- **Business ability or outcome:** Identify the medium needed for communication.
+- **Source:** [VS-2](003-business-architecture.md#vs-2)
+
+<a id="cap-8.2"></a>
+
+**CAP-8.2**
+
+- **Name:** Channel Configuration
+- **Business ability or outcome:** Establish the settings needed to communicate through a
+  medium.
+- **Source:** [VS-2](003-business-architecture.md#vs-2)
+
+<a id="cap-8.3"></a>
+
+**CAP-8.3**
+
+- **Name:** Channel Dispatch
+- **Business ability or outcome:** Convey a communication through its chosen medium.
+- **Source:** [VS-2](003-business-architecture.md#vs-2)
+
+### 2.9 WhatsApp Communication Management
+
+<a id="cap-9"></a>
+
+**CAP-9**
+
+- **Name:** WhatsApp Communication Management
+- **Business ability or outcome:** Convey messages to and from users through WhatsApp.
+- **Source:** [REQ-2.1.2](002-detailed-requirements.md#req-2.1.2),
+  [NFR-2.1](002-detailed-requirements.md#nfr-2.1)
+
+<a id="cap-9.1"></a>
+
+**CAP-9.1**
+
+- **Name:** WhatsApp Communication Configuration
+- **Business ability or outcome:** Establish the settings needed for WhatsApp
+  communication.
+- **Source:** [REQ-2.1.2](002-detailed-requirements.md#req-2.1.2)
+
+<a id="cap-9.2"></a>
+
+**CAP-9.2**
+
+- **Name:** WhatsApp Message Dispatch
+- **Business ability or outcome:** Send a communication through WhatsApp.
+- **Source:** [REQ-2.1.2](002-detailed-requirements.md#req-2.1.2)
+
+### 2.10 Audit Log Management
+
+<a id="cap-10"></a>
+
+**CAP-10**
+
+- **Name:** Audit Log Management
+- **Business ability or outcome:** Create, store, and retrieve records of relevant
+  activity.
+- **Source:** [OPEN-003-4](003-business-architecture.md#open-003-4)
+
+### 2.11 Submission Management
+
+<a id="cap-11"></a>
+
+**CAP-11**
+
+- **Name:** Submission Management
+- **Business ability or outcome:** Capture and validate information submitted to request a
+  business operation.
+- **Source:** [REQ-2.1.1](002-detailed-requirements.md#req-2.1.1)
+
+<a id="cap-11.1"></a>
+
+**CAP-11.1**
+
+- **Name:** Input Data Capture
+- **Business ability or outcome:** Receive details supplied by a person.
+- **Source:** [REQ-2.1.1](002-detailed-requirements.md#req-2.1.1)
+
+<a id="cap-11.2"></a>
+
+**CAP-11.2**
+
+- **Name:** Form Submission
+- **Business ability or outcome:** Accept a submitted set of details for processing.
+- **Source:** [REQ-2.1.1](002-detailed-requirements.md#req-2.1.1)
+
+<a id="cap-11.3"></a>
+
+**CAP-11.3**
+
+- **Name:** Submission Schema Determination
+- **Business ability or outcome:** Determine the expected structure of a submission.
+- **Source:** [REQ-2.1.1](002-detailed-requirements.md#req-2.1.1)
+
+<a id="cap-11.4"></a>
+
+**CAP-11.4**
+
+- **Name:** Submission Validation
+- **Business ability or outcome:** Check submission structure and phone, name, and
+  password values against the applicable rules.
+- **Source:** [REQ-2.1.1](002-detailed-requirements.md#req-2.1.1),
+  [OPEN-002-2](002-detailed-requirements.md#open-002-2)
+
+## 3 Information map
+
+### 3.1 Concepts, types, and states
+
+State lists and “None recorded” values preserve the original map. Their complete
+definitions, permissible transitions, and the sufficiency of type lists require
+[OPEN-003-2](003-business-architecture.md#open-003-2). The short definitions below are
+business vocabulary,
+not physical table definitions. Secondary-parent references denote existence
+dependencies, not a decided database deletion policy.
+
+<a id="info-1"></a>
+
+**INFO-1**
+
+- **Concept and definition:** User — a person using the service.
+- **Category and parent:** Primary
+- **Types:** superuser, staff, customer
+- **States:** unverified, active, inactive, barred, deleted
+- **Source:** [CAP-1.1](003-business-architecture.md#cap-1.1),
+  [CAP-1.4](003-business-architecture.md#cap-1.4)
+
+<a id="info-1.1"></a>
+
+**INFO-1.1**
+
+- **Concept and definition:** User Profile — characteristics describing a user.
+- **Category and parent:** Secondary; [INFO-1](003-business-architecture.md#info-1)
+- **Types:** None recorded
+- **States:** None recorded
+- **Source:** [CAP-1.2](003-business-architecture.md#cap-1.2)
+
+<a id="info-1.2"></a>
+
+**INFO-1.2**
+
+- **Concept and definition:** User Preferences — parameters expressing a user’s needs.
+- **Category and parent:** Secondary; [INFO-1](003-business-architecture.md#info-1)
+- **Types:** None recorded
+- **States:** None recorded
+- **Source:** [CAP-1.3](003-business-architecture.md#cap-1.3)
+
+<a id="info-1.3"></a>
+
+**INFO-1.3**
+
+- **Concept and definition:** User Contact — an identifier for a user in a communication
+  channel.
+- **Category and parent:** Secondary; [INFO-1](003-business-architecture.md#info-1)
+- **Types:** phone number, email address
+- **States:** unverified, active, disabled
+- **Source:** [CAP-1.7](003-business-architecture.md#cap-1.7)
+
+<a id="info-2"></a>
+
+**INFO-2**
+
+- **Concept and definition:** Organisation — a container for assets belonging to one
+  entity.
+- **Category and parent:** Primary
+- **Types:** None recorded
+- **States:** active, inactive, barred, deleted
+- **Source:** [CAP-2](003-business-architecture.md#cap-2)
+
+<a id="info-2.1"></a>
+
+**INFO-2.1**
+
+- **Concept and definition:** Organisation Access Constraint — a policy limiting access to
+  organisation resources.
+- **Category and parent:** Secondary; [INFO-2](003-business-architecture.md#info-2)
+- **Types:** object, attribute
+- **States:** None recorded
+- **Source:** [CAP-2.4](003-business-architecture.md#cap-2.4)
+
+<a id="info-2.2"></a>
+
+**INFO-2.2**
+
+- **Concept and definition:** Organisation Limit — a policy determining limits on
+  organisation resources.
+- **Category and parent:** Secondary; [INFO-2](003-business-architecture.md#info-2)
+- **Types:** None recorded
+- **States:** None recorded
+- **Source:** [CAP-2.5](003-business-architecture.md#cap-2.5)
+
+<a id="info-2.3"></a>
+
+**INFO-2.3**
+
+- **Concept and definition:** Membership Invitation — definition incomplete in the source.
+- **Category and parent:** Secondary; [INFO-2](003-business-architecture.md#info-2);
+  classification unresolved
+- **Types:** Not specified
+- **States:** Not specified
+- **Source:** [OPEN-003-1](003-business-architecture.md#open-003-1)
+
+<a id="info-3"></a>
+
+**INFO-3**
+
+- **Concept and definition:** Verification Code — a code used to verify authenticity of a
+  request or contact verification.
+- **Category and parent:** Primary in source; ownership needs confirmation
+- **Types:** otp
+- **States:** ready, used, expired
+- **Source:** [CAP-3](003-business-architecture.md#cap-3)
+
+<a id="info-4"></a>
+
+**INFO-4**
+
+- **Concept and definition:** Invitation — a mechanism allowing users to join an
+  organisation.
+- **Category and parent:** Primary in source; relationship to
+  [INFO-2.3](003-business-architecture.md#info-2.3) unresolved
+- **Types:** None recorded
+- **States:** active, used, revoked
+- **Source:** [CAP-4](003-business-architecture.md#cap-4),
+  [OPEN-003-1](003-business-architecture.md#open-003-1)
+
+### 3.2 Business relationships
+
+Relationships are defined once from their controlling concept or parent. These
+associations derive from the original concept relationships and matching
+capabilities; cardinalities require scenario validation in 004.
+
+**Controlling concept: [INFO-1](003-business-architecture.md#info-1)**
+
+- **Related concept:** [INFO-1.1](003-business-architecture.md#info-1.1)
+- **Business relationship:** Owns dependent profile information.
+- **Establishing capability:** [CAP-1.2](003-business-architecture.md#cap-1.2)
+
+**Controlling concept: [INFO-1](003-business-architecture.md#info-1)**
+
+- **Related concept:** [INFO-1.2](003-business-architecture.md#info-1.2)
+- **Business relationship:** Owns dependent preference information.
+- **Establishing capability:** [CAP-1.3](003-business-architecture.md#cap-1.3)
+
+**Controlling concept: [INFO-1](003-business-architecture.md#info-1)**
+
+- **Related concept:** [INFO-1.3](003-business-architecture.md#info-1.3)
+- **Business relationship:** Owns contact methods.
+- **Establishing capability:** [CAP-1.7](003-business-architecture.md#cap-1.7)
+
+**Controlling concept: [INFO-1](003-business-architecture.md#info-1)**
+
+- **Related concept:** [OPEN-003-4](003-business-architecture.md#open-003-4)
+- **Business relationship:** Associated with a subscription; the subscription concept is
+  not yet defined.
+- **Establishing capability:** [CAP-1.6.1](003-business-architecture.md#cap-1.6.1)
+
+**Controlling concept: [INFO-1.3](003-business-architecture.md#info-1.3)**
+
+- **Related concept:** [OPEN-003-4](003-business-architecture.md#open-003-4)
+- **Business relationship:** Uses a communication channel; channel concept definition is
+  missing.
+- **Establishing capability:** Association-setting capability not specified;
+  [OPEN-003-4](003-business-architecture.md#open-003-4). Channel communication itself is
+  [CAP-8](003-business-architecture.md#cap-8).
+
+**Controlling concept: [INFO-2](003-business-architecture.md#info-2)**
+
+- **Related concept:** [INFO-2.1](003-business-architecture.md#info-2.1)
+- **Business relationship:** Owns organisation access constraints.
+- **Establishing capability:** [CAP-2.4](003-business-architecture.md#cap-2.4)
+
+**Controlling concept: [INFO-2](003-business-architecture.md#info-2)**
+
+- **Related concept:** [INFO-2.2](003-business-architecture.md#info-2.2)
+- **Business relationship:** Owns organisation limits.
+- **Establishing capability:** [CAP-2.5](003-business-architecture.md#cap-2.5)
+
+**Controlling concept: [INFO-2](003-business-architecture.md#info-2)**
+
+- **Related concept:** [INFO-2.3](003-business-architecture.md#info-2.3)
+- **Business relationship:** Source places a dependent membership invitation here;
+  reconcile with independent Invitation.
+- **Establishing capability:** [CAP-4.4.1](003-business-architecture.md#cap-4.4.1)
+
+**Controlling concept: [INFO-2](003-business-architecture.md#info-2)**
+
+- **Related concept:** [INFO-1](003-business-architecture.md#info-1)
+- **Business relationship:** Establishes organisation membership; superuser association
+  must also satisfy the one-superuser rule.
+- **Establishing capability:** [CAP-2.6.1](003-business-architecture.md#cap-2.6.1)
+
+**Controlling concept: [INFO-2](003-business-architecture.md#info-2)**
+
+- **Related concept:** [OPEN-003-4](003-business-architecture.md#open-003-4)
+- **Business relationship:** Associated with a subscription; concept not yet defined.
+- **Establishing capability:** [CAP-2.6.2](003-business-architecture.md#cap-2.6.2)
+
+**Controlling concept: [INFO-3](003-business-architecture.md#info-3)**
+
+- **Related concept:** [INFO-1](003-business-architecture.md#info-1)
+- **Business relationship:** Associates a verification code with its user.
+- **Establishing capability:** [CAP-3.4.1](003-business-architecture.md#cap-3.4.1)
+
+**Controlling concept: [INFO-3](003-business-architecture.md#info-3)**
+
+- **Related concept:** [INFO-1.3](003-business-architecture.md#info-1.3)
+- **Business relationship:** Associates a verification code with a contact.
+- **Establishing capability:** [CAP-3.4.2](003-business-architecture.md#cap-3.4.2)
+
+**Controlling concept: [INFO-4](003-business-architecture.md#info-4)**
+
+- **Related concept:** [INFO-2](003-business-architecture.md#info-2)
+- **Business relationship:** Associates an invitation with the organisation to be joined.
+- **Establishing capability:** [CAP-4.4.1](003-business-architecture.md#cap-4.4.1)
+
+**Controlling concept: [INFO-4](003-business-architecture.md#info-4)**
+
+- **Related concept:** [INFO-1](003-business-architecture.md#info-1)
+- **Business relationship:** Associates an invitation with its intended user.
+- **Establishing capability:** [CAP-4.4.2](003-business-architecture.md#cap-4.4.2)
+
+## 4 Value streams
+
+### 4.1 Register User
+
+<a id="vs-1"></a>**VS-1 — Register User.** A customer submits details and establishes
+a verified account. Triggering stakeholder: customer/user. Value proposition: the
+customer has a verified account. Sources:
+[REQ-2.1.1](002-detailed-requirements.md#req-2.1.1),
+[REQ-2.1.2](002-detailed-requirements.md#req-2.1.2)
+and the original Register user map.
+
+The stage names and order are preserved. Entry/exit conditions and value items are
+derived descriptions, subject to the linked open policies; they do not establish
+new mandatory fields or equate contact verification with account activation.
+
+<a id="stage-1.1"></a>
+
+**STAGE-1.1 — Submit User Details**
+
+- **Entry:** Customer seeks an account.
+- **Exit:** Details are submitted.
+- **Value item:** A registration request is captured.
+- **Participants:** Customer; service
+- **Enabling capabilities:** [CAP-11.1](003-business-architecture.md#cap-11.1),
+  [CAP-11.2](003-business-architecture.md#cap-11.2),
+  [CAP-11.3](003-business-architecture.md#cap-11.3)
+
+<a id="stage-1.2"></a>
+
+**STAGE-1.2 — Accept User Details**
+
+- **Entry:** Submitted details are available.
+- **Exit:** Details satisfy the applicable schema and validation rules;
+  [OPEN-002-2](002-detailed-requirements.md#open-002-2) defines them.
+- **Value item:** The request is fit for account creation.
+- **Participants:** Customer; service
+- **Enabling capabilities:** [CAP-11.4](003-business-architecture.md#cap-11.4)
+
+<a id="stage-1.3"></a>
+
+**STAGE-1.3 — Create User Account**
+
+- **Entry:** Accepted details are available.
+- **Exit:** A user record exists; initial lifecycle state requires
+  [OPEN-003-2](003-business-architecture.md#open-003-2).
+- **Value item:** The customer is represented by an account.
+- **Participants:** Customer; service
+- **Enabling capabilities:** [CAP-1.1](003-business-architecture.md#cap-1.1),
+  [CAP-5.1](003-business-architecture.md#cap-5.1),
+  [CAP-5.2](003-business-architecture.md#cap-5.2),
+  [CAP-5.3](003-business-architecture.md#cap-5.3)
+
+<a id="stage-1.4"></a>
+
+**STAGE-1.4 — Initialise Verification**
+
+- **Entry:** The account and phone details exist.
+- **Exit:** A verification code is generated and the verification workflow initiated;
+  delivery responsibility is [OPEN-003-3](003-business-architecture.md#open-003-3).
+- **Value item:** The customer has a path to proving phone ownership.
+- **Participants:** Customer; service; messaging participant
+- **Enabling capabilities:** [CAP-3.1](003-business-architecture.md#cap-3.1),
+  [CAP-5.1](003-business-architecture.md#cap-5.1),
+  [CAP-5.2](003-business-architecture.md#cap-5.2),
+  [CAP-5.3](003-business-architecture.md#cap-5.3)
+
+<a id="stage-1.5"></a>
+
+**STAGE-1.5 — Verify User**
+
+- **Entry:** The user submits proof for the initiated verification.
+- **Exit:** Valid proof produces the defined verified outcome; account/contact transitions
+  require [OPEN-003-2](003-business-architecture.md#open-003-2).
+- **Value item:** The customer has a verified account.
+- **Participants:** Customer; service
+- **Enabling capabilities:** [CAP-11.1](003-business-architecture.md#cap-11.1),
+  [CAP-11.4](003-business-architecture.md#cap-11.4),
+  [CAP-3.2](003-business-architecture.md#cap-3.2),
+  [CAP-1.4](003-business-architecture.md#cap-1.4),
+  [CAP-5.1](003-business-architecture.md#cap-5.1),
+  [CAP-5.2](003-business-architecture.md#cap-5.2),
+  [CAP-5.3](003-business-architecture.md#cap-5.3)
+
+### 4.2 Notify User
+
+<a id="vs-2"></a>**VS-2 — Notify User.** Receive a notification request, prepare a
+message, and dispatch it through a channel. The source provides these stages;
+the intended value is that a user receives relevant information under their
+preferences and permissions. Triggering stakeholder and delivery-success criteria
+require [OPEN-003-3](003-business-architecture.md#open-003-3). Sources:
+[REQ-2.3.1](002-detailed-requirements.md#req-2.3.1),
+[REQ-2.3.2](002-detailed-requirements.md#req-2.3.2).
+
+<a id="stage-2.1"></a>
+
+**STAGE-2.1 — Receive Notification Request**
+
+- **Entry:** A notice is requested.
+- **Exit:** Notice type, preferences, and permissions determine whether dispatch is
+  appropriate.
+- **Value item:** A relevant, permitted communication is selected.
+- **Participants:** Requesting participant unresolved; recipient user
+- **Enabling capabilities:** [CAP-5.1](003-business-architecture.md#cap-5.1),
+  [CAP-5.2](003-business-architecture.md#cap-5.2),
+  [CAP-5.3](003-business-architecture.md#cap-5.3),
+  [CAP-6.2](003-business-architecture.md#cap-6.2),
+  [CAP-6.5](003-business-architecture.md#cap-6.5),
+  [CAP-1.3](003-business-architecture.md#cap-1.3)
+
+<a id="stage-2.2"></a>
+
+**STAGE-2.2 — Prepare Message**
+
+- **Entry:** Dispatch is permitted.
+- **Exit:** Content, message form, channel choice, and status tracking are prepared.
+- **Value item:** The notice is ready for the selected medium.
+- **Participants:** Service; recipient preferences apply
+- **Enabling capabilities:** [CAP-6.3](003-business-architecture.md#cap-6.3),
+  [CAP-6.4](003-business-architecture.md#cap-6.4),
+  [CAP-7.1](003-business-architecture.md#cap-7.1),
+  [CAP-7.3](003-business-architecture.md#cap-7.3),
+  [CAP-7.5](003-business-architecture.md#cap-7.5),
+  [CAP-7.6](003-business-architecture.md#cap-7.6)
+
+<a id="stage-2.3"></a>
+
+**STAGE-2.3 — Dispatch Message**
+
+- **Entry:** A prepared communication and channel configuration are available.
+- **Exit:** The message is dispatched; acceptance versus delivery remains
+  [OPEN-003-3](003-business-architecture.md#open-003-3).
+- **Value item:** Information is conveyed toward the recipient.
+- **Participants:** Channel provider; recipient
+- **Enabling capabilities:** [CAP-7.4](003-business-architecture.md#cap-7.4),
+  [CAP-8.1](003-business-architecture.md#cap-8.1),
+  [CAP-8.2](003-business-architecture.md#cap-8.2),
+  [CAP-8.3](003-business-architecture.md#cap-8.3),
+  [CAP-9.1](003-business-architecture.md#cap-9.1),
+  [CAP-9.2](003-business-architecture.md#cap-9.2)
+
+The original preparation stage listed message dispatch; the dispatch capability
+is mapped to Dispatch Message, where its outcome occurs. Event definition/capture/
+distribution are retained from the original receipt stage; whether all three
+perform work there, rather than upstream, remains
+[OPEN-003-3](003-business-architecture.md#open-003-3).
+
+### 4.3 Onboard User
+
+<a id="vs-3"></a>**VS-3 — Onboard User.** The source contains only this title.
+Triggering stakeholder, distinct value proposition, stages, and relationship to
+Register User require [OPEN-003-3](003-business-architecture.md#open-003-3). No stage IDs
+are allocated yet.
+
+## 5 Cross-mappings and downstream derivation
+
+Use means consuming business information; modify means creating, changing, or
+removing it. These are derived responsibility mappings, not database permissions.
+
+**Concept: [INFO-1](003-business-architecture.md#info-1)**
+
+- **Capabilities that use it:** [CAP-3.4.1](003-business-architecture.md#cap-3.4.1),
+  [CAP-2.6.1](003-business-architecture.md#cap-2.6.1)
+- **Capabilities that modify it:** [CAP-1.1](003-business-architecture.md#cap-1.1),
+  [CAP-1.4](003-business-architecture.md#cap-1.4),
+  [CAP-1.5](003-business-architecture.md#cap-1.5)
+- **Data/application references:** [DATA-1](004-data-architecture.md#data-1),
+  [APP-2](005-application-architecture.md#app-2)
+
+**Concept: [INFO-1.1](003-business-architecture.md#info-1.1)**
+
+- **Capabilities that use it:** [CAP-1.2](003-business-architecture.md#cap-1.2)
+- **Capabilities that modify it:** [CAP-1.2](003-business-architecture.md#cap-1.2)
+- **Data/application references:** [DATA-2](004-data-architecture.md#data-2),
+  [APP-2](005-application-architecture.md#app-2)
+
+**Concept: [INFO-1.2](003-business-architecture.md#info-1.2)**
+
+- **Capabilities that use it:** [CAP-6.2](003-business-architecture.md#cap-6.2),
+  [CAP-6.3](003-business-architecture.md#cap-6.3)
+- **Capabilities that modify it:** [CAP-1.3](003-business-architecture.md#cap-1.3)
+- **Data/application references:** [DATA-3](004-data-architecture.md#data-3),
+  [APP-2](005-application-architecture.md#app-2),
+  [APP-5](005-application-architecture.md#app-5)
+
+**Concept: [INFO-1.3](003-business-architecture.md#info-1.3)**
+
+- **Capabilities that use it:** [CAP-3.4.2](003-business-architecture.md#cap-3.4.2),
+  [CAP-8](003-business-architecture.md#cap-8)
+- **Capabilities that modify it:** [CAP-1.7.1](003-business-architecture.md#cap-1.7.1),
+  [CAP-1.7.2](003-business-architecture.md#cap-1.7.2),
+  [CAP-1.7.3](003-business-architecture.md#cap-1.7.3)
+- **Data/application references:** [DATA-4](004-data-architecture.md#data-4),
+  [APP-2](005-application-architecture.md#app-2),
+  [APP-3](005-application-architecture.md#app-3)
+
+**Concept: [INFO-2](003-business-architecture.md#info-2)**
+
+- **Capabilities that use it:** [CAP-4.4.1](003-business-architecture.md#cap-4.4.1)
+- **Capabilities that modify it:** [CAP-2.1](003-business-architecture.md#cap-2.1),
+  [CAP-2.2](003-business-architecture.md#cap-2.2),
+  [CAP-2.3](003-business-architecture.md#cap-2.3)
+- **Data/application references:** [DATA-5](004-data-architecture.md#data-5),
+  [APP-8](005-application-architecture.md#app-8)
+
+**Concept: [INFO-2.1](003-business-architecture.md#info-2.1)**
+
+- **Capabilities that use it:** [CAP-2.4.2](003-business-architecture.md#cap-2.4.2),
+  [CAP-2.4.3](003-business-architecture.md#cap-2.4.3)
+- **Capabilities that modify it:** [CAP-2.4.1](003-business-architecture.md#cap-2.4.1)
+- **Data/application references:** [DATA-6](004-data-architecture.md#data-6),
+  [APP-8](005-application-architecture.md#app-8)
+
+**Concept: [INFO-2.2](003-business-architecture.md#info-2.2)**
+
+- **Capabilities that use it:** [CAP-2.5.2](003-business-architecture.md#cap-2.5.2),
+  [CAP-2.5.3](003-business-architecture.md#cap-2.5.3)
+- **Capabilities that modify it:** [CAP-2.5.1](003-business-architecture.md#cap-2.5.1)
+- **Data/application references:** [DATA-7](004-data-architecture.md#data-7),
+  [APP-8](005-application-architecture.md#app-8)
+
+**Concept: [INFO-2.3](003-business-architecture.md#info-2.3)**
+
+- **Capabilities that use it:** [OPEN-003-1](003-business-architecture.md#open-003-1)
+- **Capabilities that modify it:** [OPEN-003-1](003-business-architecture.md#open-003-1)
+- **Data/application references:** [DATA-8](004-data-architecture.md#data-8)
+
+**Concept: [INFO-3](003-business-architecture.md#info-3)**
+
+- **Capabilities that use it:** [CAP-3.2](003-business-architecture.md#cap-3.2)
+- **Capabilities that modify it:** [CAP-3.1](003-business-architecture.md#cap-3.1),
+  [CAP-3.3](003-business-architecture.md#cap-3.3),
+  [CAP-3.4](003-business-architecture.md#cap-3.4)
+- **Data/application references:** [DATA-9](004-data-architecture.md#data-9),
+  [APP-3](005-application-architecture.md#app-3)
+
+**Concept: [INFO-4](003-business-architecture.md#info-4)**
+
+- **Capabilities that use it:** [CAP-4.3.2](003-business-architecture.md#cap-4.3.2),
+  [CAP-4.3.3](003-business-architecture.md#cap-4.3.3)
+- **Capabilities that modify it:** [CAP-4.1](003-business-architecture.md#cap-4.1),
+  [CAP-4.2](003-business-architecture.md#cap-4.2),
+  [CAP-4.4](003-business-architecture.md#cap-4.4)
+- **Data/application references:** [DATA-10](004-data-architecture.md#data-10),
+  [APP-8](005-application-architecture.md#app-8)
+
+The registration trace joins [REQ-2.1.1](002-detailed-requirements.md#req-2.1.1),
+[REQ-2.1.2](002-detailed-requirements.md#req-2.1.2) →
+[VS-1](003-business-architecture.md#vs-1),
+[CAP-1.1](003-business-architecture.md#cap-1.1),
+[CAP-3.2](003-business-architecture.md#cap-3.2) →
+[INFO-1](003-business-architecture.md#info-1),
+[INFO-1.3](003-business-architecture.md#info-1.3),
+[INFO-3](003-business-architecture.md#info-3) → [DATA-1](004-data-architecture.md#data-1),
+[DATA-4](004-data-architecture.md#data-4), [DATA-9](004-data-architecture.md#data-9) →
+[APP-2](005-application-architecture.md#app-2),
+[APP-3](005-application-architecture.md#app-3),
+[TECH-3](006-technology-architecture.md#tech-3). It records design intent, not an
+implemented end-to-end feature.
+
+## 6 Open decisions
+
+<a id="open-003-1"></a>
+
+**OPEN-003-1**
+
+- **Question and impact:** The source defines both dependent Membership Invitation under
+  Organisation and independent Invitation. Decide whether these are one concept and its
+  ownership, or distinct concepts. Preserve both until resolved; data candidates must not
+  create duplicate invitation tables by default.
+
+<a id="open-003-2"></a>
+
+**OPEN-003-2**
+
+- **Question and impact:** Define state meanings, transitions, prerequisites, and effects
+  for users, contacts, organisations, codes, and invitations. Confirm role/type semantics
+  and whether account activation follows contact verification. Reconcile primary
+  Verification Code classification with its associations. These decisions constrain data
+  and typestate APIs.
+
+<a id="open-003-3"></a>
+
+**OPEN-003-3**
+
+- **Question and impact:** Define Onboard User and its relationship to registration;
+  notification requester, preferences for verification messages, rejected-dispatch exits,
+  delivery guarantees, and registration-to-message handoff. Validate the event
+  capabilities active at each stage.
+
+<a id="open-003-4"></a>
+
+**OPEN-003-4**
+
+- **Question and impact:** Complete business coverage for subscriptions, sites, assets,
+  gateways, sensors, actuators, thresholds, and actions. Define referenced channel, event,
+  notification, message, and audit information concepts; establish audit and
+  publisher-registration requirements. Existing capability names are retained without
+  inventing missing requirements.
+
+## 7 Legacy reference mapping
+
+### 7.1 Capabilities
+
+Original labels refer to the former Capability Mapping section unless a value
+stream is explicitly named. Duplicate numbers are disambiguated by map and name.
+Message and later roots are renumbered to remove the repeated 6; submission and
+stage-only subcapabilities are promoted from existing value-map descriptions.
+WhatsApp API Management is expressed as a communication ability; API mechanics
+belong in application/technology design.
+
+**Original map, label, or stage reference: User map / 1**
+
+- **New identifier:** [CAP-1](003-business-architecture.md#cap-1)
+
+**Original map, label, or stage reference: User map / 1.1**
+
+- **New identifier:** [CAP-1.1](003-business-architecture.md#cap-1.1)
+
+**Original map, label, or stage reference: User map / 1.2**
+
+- **New identifier:** [CAP-1.2](003-business-architecture.md#cap-1.2)
+
+**Original map, label, or stage reference: User map / 1.3**
+
+- **New identifier:** [CAP-1.3](003-business-architecture.md#cap-1.3)
+
+**Original map, label, or stage reference: User map / 1.4**
+
+- **New identifier:** [CAP-1.4](003-business-architecture.md#cap-1.4)
+
+**Original map, label, or stage reference: User map / 1.5**
+
+- **New identifier:** [CAP-1.5](003-business-architecture.md#cap-1.5)
+
+**Original map, label, or stage reference: User map / 1.6**
+
+- **New identifier:** [CAP-1.6](003-business-architecture.md#cap-1.6)
+
+**Original map, label, or stage reference: User map / 1.6.1**
+
+- **New identifier:** [CAP-1.6.1](003-business-architecture.md#cap-1.6.1)
+
+**Original map, label, or stage reference: User map / 1.7**
+
+- **New identifier:** [CAP-1.7](003-business-architecture.md#cap-1.7)
+
+**Original map, label, or stage reference: User map / 1.7.1**
+
+- **New identifier:** [CAP-1.7.1](003-business-architecture.md#cap-1.7.1)
+
+**Original map, label, or stage reference: User map / 1.7.2**
+
+- **New identifier:** [CAP-1.7.2](003-business-architecture.md#cap-1.7.2)
+
+**Original map, label, or stage reference: User map / 1.7.3**
+
+- **New identifier:** [CAP-1.7.3](003-business-architecture.md#cap-1.7.3)
+
+**Original map, label, or stage reference: Organisation map / 2**
+
+- **New identifier:** [CAP-2](003-business-architecture.md#cap-2)
+
+**Original map, label, or stage reference: Organisation map / 1.1**
+
+- **New identifier:** [CAP-2.1](003-business-architecture.md#cap-2.1)
+
+**Original map, label, or stage reference: Organisation map / 1.2**
+
+- **New identifier:** [CAP-2.2](003-business-architecture.md#cap-2.2)
+
+**Original map, label, or stage reference: Organisation map / 1.3**
+
+- **New identifier:** [CAP-2.3](003-business-architecture.md#cap-2.3)
+
+**Original map, label, or stage reference: Organisation map / 1.3.2.1 member list**
+
+- **New identifier:** [CAP-2.3.1](003-business-architecture.md#cap-2.3.1)
+
+**Original map, label, or stage reference: Organisation map / 1.3.2.1 member access**
+
+- **New identifier:** [CAP-2.3.2](003-business-architecture.md#cap-2.3.2)
+
+**Original map, label, or stage reference: Organisation map / 1.4**
+
+- **New identifier:** [CAP-2.4](003-business-architecture.md#cap-2.4)
+
+**Original map, label, or stage reference: Organisation map / 1.4.1**
+
+- **New identifier:** [CAP-2.4.1](003-business-architecture.md#cap-2.4.1)
+
+**Original map, label, or stage reference: Organisation map / 1.4.2**
+
+- **New identifier:** [CAP-2.4.2](003-business-architecture.md#cap-2.4.2)
+
+**Original map, label, or stage reference: Organisation map / 1.4.3**
+
+- **New identifier:** [CAP-2.4.3](003-business-architecture.md#cap-2.4.3)
+
+**Original map, label, or stage reference: Organisation map / 1.5**
+
+- **New identifier:** [CAP-2.5](003-business-architecture.md#cap-2.5)
+
+**Original map, label, or stage reference: Organisation map / 1.5.1**
+
+- **New identifier:** [CAP-2.5.1](003-business-architecture.md#cap-2.5.1)
+
+**Original map, label, or stage reference: Organisation map / 1.5.2**
+
+- **New identifier:** [CAP-2.5.2](003-business-architecture.md#cap-2.5.2)
+
+**Original map, label, or stage reference: Organisation map / 1.5.3**
+
+- **New identifier:** [CAP-2.5.3](003-business-architecture.md#cap-2.5.3)
+
+**Original map, label, or stage reference: Organisation map / 1.6**
+
+- **New identifier:** [CAP-2.6](003-business-architecture.md#cap-2.6)
+
+**Original map, label, or stage reference: Organisation map / 1.6 unnumbered organisation/user**
+
+- **New identifier:** [CAP-2.6.1](003-business-architecture.md#cap-2.6.1)
+
+**Original map, label, or stage reference: Organisation map / 1.6 unnumbered
+organisation/subscription**
+
+- **New identifier:** [CAP-2.6.2](003-business-architecture.md#cap-2.6.2)
+
+**Original map, label, or stage reference: Verification map / 3**
+
+- **New identifier:** [CAP-3](003-business-architecture.md#cap-3)
+
+**Original map, label, or stage reference: Verification map / 3.1**
+
+- **New identifier:** [CAP-3.1](003-business-architecture.md#cap-3.1)
+
+**Original map, label, or stage reference: Verification map / 3.2**
+
+- **New identifier:** [CAP-3.2](003-business-architecture.md#cap-3.2)
+
+**Original map, label, or stage reference: Verification map / 3.3**
+
+- **New identifier:** [CAP-3.3](003-business-architecture.md#cap-3.3)
+
+**Original map, label, or stage reference: Verification map / 3.4**
+
+- **New identifier:** [CAP-3.4](003-business-architecture.md#cap-3.4)
+
+**Original map, label, or stage reference: Verification map / 3.4.1**
+
+- **New identifier:** [CAP-3.4.1](003-business-architecture.md#cap-3.4.1)
+
+**Original map, label, or stage reference: Verification map / 3.4.2**
+
+- **New identifier:** [CAP-3.4.2](003-business-architecture.md#cap-3.4.2)
+
+**Original map, label, or stage reference: Invitation map / 4**
+
+- **New identifier:** [CAP-4](003-business-architecture.md#cap-4)
+
+**Original map, label, or stage reference: Invitation map / 4.1**
+
+- **New identifier:** [CAP-4.1](003-business-architecture.md#cap-4.1)
+
+**Original map, label, or stage reference: Invitation map / 4.2**
+
+- **New identifier:** [CAP-4.2](003-business-architecture.md#cap-4.2)
+
+**Original map, label, or stage reference: Invitation map / 4.3**
+
+- **New identifier:** [CAP-4.3](003-business-architecture.md#cap-4.3)
+
+**Original map, label, or stage reference: Invitation map / 4.3.1**
+
+- **New identifier:** [CAP-4.3.1](003-business-architecture.md#cap-4.3.1)
+
+**Original map, label, or stage reference: Invitation map / 4.3.2**
+
+- **New identifier:** [CAP-4.3.2](003-business-architecture.md#cap-4.3.2)
+
+**Original map, label, or stage reference: Invitation map / 4.3.3**
+
+- **New identifier:** [CAP-4.3.3](003-business-architecture.md#cap-4.3.3)
+
+**Original map, label, or stage reference: Invitation map / 4.4**
+
+- **New identifier:** [CAP-4.4](003-business-architecture.md#cap-4.4)
+
+**Original map, label, or stage reference: Invitation map / 4.4.1**
+
+- **New identifier:** [CAP-4.4.1](003-business-architecture.md#cap-4.4.1)
+
+**Original map, label, or stage reference: Invitation map / 4.4.2**
+
+- **New identifier:** [CAP-4.4.2](003-business-architecture.md#cap-4.4.2)
+
+**Original map, label, or stage reference: Event map / 5**
+
+- **New identifier:** [CAP-5](003-business-architecture.md#cap-5)
+
+**Original map, label, or stage reference: Event map / 5.1**
+
+- **New identifier:** [CAP-5.1](003-business-architecture.md#cap-5.1)
+
+**Original map, label, or stage reference: Event map / 5.2**
+
+- **New identifier:** [CAP-5.2](003-business-architecture.md#cap-5.2)
+
+**Original map, label, or stage reference: Event map / 5.3**
+
+- **New identifier:** [CAP-5.3](003-business-architecture.md#cap-5.3)
+
+**Original map, label, or stage reference: Event map / 5.4**
+
+- **New identifier:** [CAP-5.4](003-business-architecture.md#cap-5.4)
+
+**Original map, label, or stage reference: Event map / 5.5**
+
+- **New identifier:** [CAP-5.5](003-business-architecture.md#cap-5.5)
+
+**Original map, label, or stage reference: Notification map / 6**
+
+- **New identifier:** [CAP-6](003-business-architecture.md#cap-6)
+
+**Original map, label, or stage reference: Notification map / 6.1**
+
+- **New identifier:** [CAP-6.1](003-business-architecture.md#cap-6.1)
+
+**Original map, label, or stage reference: Notification map / 6.2; Notify user / receive
+notification request**
+
+- **New identifier:** [CAP-6.2](003-business-architecture.md#cap-6.2)
+
+**Original map, label, or stage reference: Notification map / 6.3**
+
+- **New identifier:** [CAP-6.3](003-business-architecture.md#cap-6.3)
+
+**Original map, label, or stage reference: Notification map / 6.4**
+
+- **New identifier:** [CAP-6.4](003-business-architecture.md#cap-6.4)
+
+**Original map, label, or stage reference: Notify user / receive notification request /
+notification type determination**
+
+- **New identifier:** [CAP-6.5](003-business-architecture.md#cap-6.5)
+
+**Original map, label, or stage reference: Message map / second 6**
+
+- **New identifier:** [CAP-7](003-business-architecture.md#cap-7)
+
+**Original map, label, or stage reference: Message map / 6.1**
+
+- **New identifier:** [CAP-7.1](003-business-architecture.md#cap-7.1)
+
+**Original map, label, or stage reference: Message map / 6.2**
+
+- **New identifier:** [CAP-7.2](003-business-architecture.md#cap-7.2)
+
+**Original map, label, or stage reference: Message map / 6.3; Notify user / prepare /
+message type determination**
+
+- **New identifier:** [CAP-7.3](003-business-architecture.md#cap-7.3)
+
+**Original map, label, or stage reference: Message map / 6.4**
+
+- **New identifier:** [CAP-7.4](003-business-architecture.md#cap-7.4)
+
+**Original map, label, or stage reference: Message map / 6.5**
+
+- **New identifier:** [CAP-7.5](003-business-architecture.md#cap-7.5)
+
+**Original map, label, or stage reference: Notify user / prepare / message status tracking**
+
+- **New identifier:** [CAP-7.6](003-business-architecture.md#cap-7.6)
+
+**Original map, label, or stage reference: Channel map / 7**
+
+- **New identifier:** [CAP-8](003-business-architecture.md#cap-8)
+
+**Original map, label, or stage reference: Notify user / dispatch message / channel identification**
+
+- **New identifier:** [CAP-8.1](003-business-architecture.md#cap-8.1)
+
+**Original map, label, or stage reference: Notify user / dispatch message / channel configuration**
+
+- **New identifier:** [CAP-8.2](003-business-architecture.md#cap-8.2)
+
+**Original map, label, or stage reference: Notify user / dispatch message / message dispatch**
+
+- **New identifier:** [CAP-8.3](003-business-architecture.md#cap-8.3)
+
+**Original map, label, or stage reference: WhatsApp API map / 8**
+
+- **New identifier:** [CAP-9](003-business-architecture.md#cap-9)
+
+**Original map, label, or stage reference: Notify user / dispatch message / API configuration**
+
+- **New identifier:** [CAP-9.1](003-business-architecture.md#cap-9.1)
+
+**Original map, label, or stage reference: Notify user / dispatch message / message dispatch**
+
+- **New identifier:** [CAP-9.2](003-business-architecture.md#cap-9.2)
+
+**Original map, label, or stage reference: Audit log map / 9**
+
+- **New identifier:** [CAP-10](003-business-architecture.md#cap-10)
+
+**Original map, label, or stage reference: Register user / submit and accept user details**
+
+- **New identifier:** [CAP-11](003-business-architecture.md#cap-11)
+
+**Original map, label, or stage reference: Register user / submit user details / input
+data capture**
+
+- **New identifier:** [CAP-11.1](003-business-architecture.md#cap-11.1)
+
+**Original map, label, or stage reference: Register user / submit user details / form submission**
+
+- **New identifier:** [CAP-11.2](003-business-architecture.md#cap-11.2)
+
+**Original map, label, or stage reference: Register user / submit user details / data
+schema determination**
+
+- **New identifier:** [CAP-11.3](003-business-architecture.md#cap-11.3)
+
+**Original map, label, or stage reference: Register user / submit and accept / schema,
+phone number, name, password validation**
+
+- **New identifier:** [CAP-11.4](003-business-architecture.md#cap-11.4)
+
+### 7.2 Information and value maps
+
+**Original section and label: Information Map / 1 User**
+
+- **New identifier:** [INFO-1](003-business-architecture.md#info-1)
+
+**Original section and label: Information Map / User / 1.1 Profile**
+
+- **New identifier:** [INFO-1.1](003-business-architecture.md#info-1.1)
+
+**Original section and label: Information Map / User / 1.2 Preferences**
+
+- **New identifier:** [INFO-1.2](003-business-architecture.md#info-1.2)
+
+**Original section and label: Information Map / User / 1.3 Contact**
+
+- **New identifier:** [INFO-1.3](003-business-architecture.md#info-1.3)
+
+**Original section and label: Information Map / 2 Organisation**
+
+- **New identifier:** [INFO-2](003-business-architecture.md#info-2)
+
+**Original section and label: Information Map / Organisation / 1.1 Access constraint**
+
+- **New identifier:** [INFO-2.1](003-business-architecture.md#info-2.1)
+
+**Original section and label: Information Map / Organisation / 1.2 Limit**
+
+- **New identifier:** [INFO-2.2](003-business-architecture.md#info-2.2)
+
+**Original section and label: Information Map / Organisation / 1.3 Membership invitation
+(unfinished)**
+
+- **New identifier:** [INFO-2.3](003-business-architecture.md#info-2.3),
+  [OPEN-003-1](003-business-architecture.md#open-003-1)
+
+**Original section and label: Information Map / 3 Verification code**
+
+- **New identifier:** [INFO-3](003-business-architecture.md#info-3)
+
+**Original section and label: Information Map / 4 Invitation**
+
+- **New identifier:** [INFO-4](003-business-architecture.md#info-4)
+
+**Original section and label: Value Map / 1 Register user; five stages in original order**
+
+- **New identifier:** [VS-1](003-business-architecture.md#vs-1),
+  [STAGE-1.1](003-business-architecture.md#stage-1.1),
+  [STAGE-1.2](003-business-architecture.md#stage-1.2),
+  [STAGE-1.3](003-business-architecture.md#stage-1.3),
+  [STAGE-1.4](003-business-architecture.md#stage-1.4),
+  [STAGE-1.5](003-business-architecture.md#stage-1.5)
+
+**Original section and label: Value Map / 2 Notify user; three stages in original order**
+
+- **New identifier:** [VS-2](003-business-architecture.md#vs-2),
+  [STAGE-2.1](003-business-architecture.md#stage-2.1),
+  [STAGE-2.2](003-business-architecture.md#stage-2.2),
+  [STAGE-2.3](003-business-architecture.md#stage-2.3)
+
+**Original section and label: Value Map / 3 Onboard user (title only)**
+
+- **New identifier:** [VS-3](003-business-architecture.md#vs-3),
+  [OPEN-003-3](003-business-architecture.md#open-003-3)
