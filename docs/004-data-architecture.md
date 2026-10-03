@@ -178,3 +178,22 @@ timestamp authority, quality measures, and telemetry freshness remain open.
 
 All original attributes are retained in section 3. Names differing from SQL or
 Rust are explained in section 5 rather than silently renamed.
+
+## 8 User read persistence implementation
+
+- **Mapping:** Database-derived types live in internal repository rows. Contact
+  SQL enum values map explicitly from `phonenumber` and `emailaddress`; the
+  physical columns `user_contact_type` and `states` map to the domain accessors
+  `contact_type()` and `state()`. The existing schema is unchanged.
+- **Validation:** SQL decoding rejects unsupported enum values. Checked
+  construction validates user/contact state before returning trusted typestate
+  objects, including the variants used by general reads.
+- **Ownership:** Profile and preference reads join through the user foreign keys.
+  Contact reads constrain both owner identity and contact identity. These query
+  scopes do not establish authorization or lifecycle transition policy.
+- **Compatibility:** No migrations or stored-data conversions are required.
+  Lifecycle fields are private and direct SQLx mapping into generic domain
+  objects is removed. Rust consumers use documented read accessors and contracts.
+- **Tests:** Each integration test receives its own migrated PostgreSQL database
+  through SQLx. Deliberately malformed schema/data fixtures are confined to these
+  test databases; the Compose service uses temporary storage.
