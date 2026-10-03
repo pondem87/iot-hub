@@ -125,7 +125,11 @@ and port `5431`; a container on the Compose network uses the service name and po
 Apply SQLx migrations from `migrations/core_db` before operations that depend on
 the core schema. Document how migrations run during setup and deployment.
 Database tests must use isolated test databases with migrations applied and clean
-up their own data. Unit tests must run without live databases or external services.
+up their own data. Unit tests must run without live databases or external services. For user
+persistence integration tests, follow the isolated
+[Compose test setup](docker-compose/README.md#isolated-user-database-tests); run
+`cargo test --locked --features database-tests --test users_persistence` against
+that disposable service. CI enforces this integration target separately.
 
 Stop the development services when finished:
 

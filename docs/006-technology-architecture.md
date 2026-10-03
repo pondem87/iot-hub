@@ -15,7 +15,7 @@ availability/security guarantees. Required engineering practices come from
 | --- | --- | --- | --- |
 | <a id="tech-1"></a>TECH-1 | Rust 2024 with Tokio for application execution and async tasks. | [APP-4](005-application-architecture.md#app-4), [APP-7](005-application-architecture.md#app-7) | [Cargo.toml](../Cargo.toml) declares the edition and runtime; [Cargo.lock](../Cargo.lock) records resolved dependencies. Toolchain pinning is required by contribution standards. |
 | <a id="tech-2"></a>TECH-2 | Axum for HTTP and Serde/JSON for data serialization; Chrono for UTC timestamps and SQLx UUID types for identity. | [APP-1](005-application-architecture.md#app-1), [APP-4](005-application-architecture.md#app-4), [DATA-1](004-data-architecture.md#data-1) | [Manifest](../Cargo.toml), [HTTP server](../src/http/app.rs), and [user models](../src/users/models.rs) show usage. This does not define external API schemas. |
-| <a id="tech-3"></a>TECH-3 | PostgreSQL accessed through SQLx for core persistence and migrations. | [APP-9](005-application-architecture.md#app-9), [DATA-1](004-data-architecture.md#data-1), [DATA-2](004-data-architecture.md#data-2), [DATA-3](004-data-architecture.md#data-3), [DATA-4](004-data-architecture.md#data-4) | [Pool creation](../src/db/db.rs), [core migration](../migrations/core_db/001_initial_user_models.sql), and [Compose](../docker-compose/compose.yaml). Local image: postgres:18.3-alpine3.23. |
+| <a id="tech-3"></a>TECH-3 | PostgreSQL accessed through SQLx for core persistence and migrations. | [APP-9](005-application-architecture.md#app-9), [DATA-1](004-data-architecture.md#data-1), [DATA-2](004-data-architecture.md#data-2), [DATA-3](004-data-architecture.md#data-3), [DATA-4](004-data-architecture.md#data-4) | [Pool creation](../src/db/connection_pool.rs), [core migration](../migrations/core_db/001_initial_user_models.sql), and [Compose](../docker-compose/compose.yaml). Local image: postgres:18.3-alpine3.23. |
 | <a id="tech-4"></a>TECH-4 | TimescaleDB on PostgreSQL for the intended telemetry store. | [REQ-5.2.1](002-detailed-requirements.md#req-5.2.1), [APP-8](005-application-architecture.md#app-8) | [Compose](../docker-compose/compose.yaml) defines timescale/timescaledb:latest-pg18. A service declaration does not establish telemetry schemas, retention, or ingestion. |
 | <a id="tech-5"></a>TECH-5 | Reproducible development, CI, and operational configuration as required engineering infrastructure. | [APP-7](005-application-architecture.md#app-7), [NFR-3.1](002-detailed-requirements.md#nfr-3.1) | [Contribution standards](../CONTRIBUTING.md) require pinned tools, checks, isolated tests, and external configuration. Production hosting and CI provider are not selected here. |
 | <a id="tech-6"></a>TECH-6 | Gateway/MQTT security and connectivity required by the product. | [NFR-1.1](002-detailed-requirements.md#nfr-1.1), [NFR-1.2](002-detailed-requirements.md#nfr-1.2), [NFR-1.3](002-detailed-requirements.md#nfr-1.3), [APP-8](005-application-architecture.md#app-8) | Business requirements mandate mutual TLS and topic authorization; broker, certificate authority, and revocation design remain open. |
@@ -99,3 +99,16 @@ error translation, and any selected recovery or delivery guarantees.
 All technology records are new; the previous document was empty. Sources and
 status appear in each record so future changes can reconcile evidence with the
 required design.
+
+## 7 Validation prerequisites
+
+The repository pins Rust 1.98.1 with rustfmt and Clippy. The CI workflow uses the
+same pin and lockfile for formatting, compilation, strict linting, tests, and
+Rustdoc generation. PostgreSQL integration tests run with the dedicated
+[Compose configuration](../docker-compose/compose.test.yaml); telemetry services
+are not required for user persistence tests.
+
+The database composition helper moved from `db::db` to `db::connection_pool` to
+remove a strict Clippy blocker. This is a Rust module path change; it does not
+alter pool construction or deployment configuration. Formatting-only prerequisite
+changes align the existing source with the mandatory `cargo fmt --check` gate.

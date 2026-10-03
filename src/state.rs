@@ -1,5 +1,5 @@
-use std::sync::{Arc, Mutex};
 use sqlx::PgPool;
+use std::sync::{Arc, Mutex};
 
 use crate::events::traits::EventManager;
 
