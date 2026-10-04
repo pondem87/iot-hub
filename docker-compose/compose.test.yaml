@@ -1,0 +1,18 @@
+# Isolated, ephemeral test database using the same PostgreSQL image as development.
+services:
+  core-db:
+    image: postgres:18.3-alpine3.23
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: iot_hub_tests
+      PGDATA: /pgdata
+    ports:
+      - "127.0.0.1:15431:5432"
+    tmpfs:
+      - /pgdata
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d iot_hub_tests"]
+      interval: 1s
+      timeout: 5s
+      retries: 30

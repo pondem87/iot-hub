@@ -1,0 +1,32 @@
+name: Rust validation
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned toolchain
+        run: rustup show active-toolchain
+      - name: Formatting
+        run: cargo fmt --check
+      - name: Compile
+        run: cargo check --locked
+      - name: Clippy (including database test target)
+        run: cargo clippy --all-targets --features database-tests --locked -- -D warnings
+      - name: Unit and documentation tests
+        run: cargo test --locked
+      - name: Documentation
+        run: cargo doc --no-deps --locked
+      - name: Start isolated PostgreSQL with Compose
+        run: docker compose -p iot-hub-tests -f docker-compose/compose.test.yaml up -d --wait core-db
+      - name: Database integration tests
+        env:
+          DATABASE_URL: postgres://postgres:postgres@127.0.0.1:15431/iot_hub_tests
+        run: cargo test --locked --features database-tests --test users_persistence
+      - name: Stop isolated PostgreSQL
+        if: always()
+        run: docker compose -p iot-hub-tests -f docker-compose/compose.test.yaml down

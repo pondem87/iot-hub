@@ -1,9 +1,9 @@
-pub mod http;
+pub mod audit_logs;
 pub mod auth;
-pub mod users;
-pub mod v_codes;
 pub mod db;
 pub mod events;
+pub mod http;
 pub mod messages;
 pub mod state;
-pub mod audit_logs;
+pub mod users;
+pub mod v_codes;
