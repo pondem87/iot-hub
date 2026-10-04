@@ -181,8 +181,11 @@ Rust are explained in section 5 rather than silently renamed.
 
 ## 8 User read persistence implementation
 
-- **Mapping:** Database-derived types live in internal repository rows. Contact
-  SQL enum values map explicitly from `phonenumber` and `emailaddress`; the
+- **Mapping:** Internal `UserData` and `ContactData` structs in the users models
+  derive SQLx `FromRow` and feed checked lifecycle construction without duplicate
+  row structs. Profiles and preferences have no checked-construction invariants
+  and derive `FromRow` directly. Runtime enums declare SQL type names and explicit
+  stored spellings, including `phonenumber` and `emailaddress`; the
   physical columns `user_contact_type` and `states` map to the domain accessors
   `contact_type()` and `state()`. The existing schema is unchanged.
 - **Validation:** SQL decoding rejects unsupported enum values. Checked

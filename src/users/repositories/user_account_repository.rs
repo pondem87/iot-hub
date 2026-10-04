@@ -2,11 +2,11 @@
 
 use sqlx::{PgPool, types::Uuid};
 
-use super::rows::{UserRow, storage_error};
+use super::storage_error::storage_error;
 use crate::users::{
     errors::UserRepositoryError,
-    models::{ActiveUser, StoredUser, User},
-    traits::UserStore,
+    models::{ActiveUser, StoredUser, User, UserData},
+    repositories::UserStore,
 };
 
 /// Reads persisted account records using an injected, cheaply cloned connection pool.
@@ -18,13 +18,16 @@ impl UserRepository {
     pub fn new(pool: PgPool) -> Self {
         Self { pool }
     }
-    async fn load(&self, id: Uuid) -> Result<Option<UserRow>, UserRepositoryError> {
-        sqlx::query_as::<_, UserRow>("SELECT id, phone_number, user_type, state, profile_id, preferences_id, created_at, updated_at FROM users WHERE id = $1").bind(id).fetch_optional(&self.pool).await.map_err(storage_error)
+    async fn load(&self, id: Uuid) -> Result<Option<UserData>, UserRepositoryError> {
+        sqlx::query_as::<_, UserData>("SELECT id, phone_number, user_type, state, profile_id, preferences_id, created_at, updated_at FROM users WHERE id = $1").bind(id).fetch_optional(&self.pool).await.map_err(storage_error)
     }
 }
 impl UserStore for UserRepository {
     async fn get_user_by_id(&self, id: Uuid) -> Result<Option<StoredUser>, UserRepositoryError> {
-        self.load(id).await?.map(UserRow::validate).transpose()
+        self.load(id)
+            .await?
+            .map(|data| data.validate().map_err(Into::into))
+            .transpose()
     }
     async fn get_active_user(
         &self,
@@ -32,7 +35,7 @@ impl UserStore for UserRepository {
     ) -> Result<Option<User<ActiveUser>>, UserRepositoryError> {
         self.load(id)
             .await?
-            .map(|row| User::<ActiveUser>::from_persisted(row.into()).map_err(Into::into))
+            .map(|row| User::<ActiveUser>::from_persisted(row).map_err(Into::into))
             .transpose()
     }
 }
@@ -59,12 +62,11 @@ mod tests {
             Err(UserRepositoryError::Unavailable { .. })
         ));
     }
-    use super::super::rows::*;
-    fn row(state: StoredUserState) -> UserRow {
-        UserRow {
+    fn row(state: UserState) -> UserData {
+        UserData {
             id: Uuid::nil(),
             phone_number: "test".into(),
-            user_type: StoredUserType::Customer,
+            user_type: UserType::Customer,
             state,
             profile_id: Uuid::nil(),
             preferences_id: Uuid::nil(),
@@ -75,36 +77,36 @@ mod tests {
     #[test]
     fn validates_every_state() {
         assert!(matches!(
-            row(StoredUserState::Unverified).validate().unwrap(),
+            row(UserState::Unverified).validate().unwrap(),
             StoredUser::Unverified(_)
         ));
         assert!(matches!(
-            row(StoredUserState::Active).validate().unwrap(),
+            row(UserState::Active).validate().unwrap(),
             StoredUser::Active(_)
         ));
         assert!(matches!(
-            row(StoredUserState::Inactive).validate().unwrap(),
+            row(UserState::Inactive).validate().unwrap(),
             StoredUser::Inactive(_)
         ));
         assert!(matches!(
-            row(StoredUserState::Barred).validate().unwrap(),
+            row(UserState::Barred).validate().unwrap(),
             StoredUser::Barred(_)
         ));
         assert!(matches!(
-            row(StoredUserState::Deleted).validate().unwrap(),
+            row(UserState::Deleted).validate().unwrap(),
             StoredUser::Deleted(_)
         ));
     }
     #[test]
     fn rejects_wrong_active_state() {
         for state in [
-            StoredUserState::Unverified,
-            StoredUserState::Inactive,
-            StoredUserState::Barred,
-            StoredUserState::Deleted,
+            UserState::Unverified,
+            UserState::Inactive,
+            UserState::Barred,
+            UserState::Deleted,
         ] {
             assert!(matches!(
-                User::<ActiveUser>::from_persisted(row(state).into()),
+                User::<ActiveUser>::from_persisted(row(state)),
                 Err(crate::users::errors::UserError::UserStateMismatch { .. })
             ));
         }

@@ -2,22 +2,24 @@
 
 use sqlx::types::Uuid;
 
+use super::UserPreferencesReads;
+
 use crate::users::{
-    errors::UserReadError,
-    models::UserPreferences,
-    traits::{UserPreferencesReads, UserPreferencesStore},
+    errors::UserReadError, models::UserPreferences, repositories::UserPreferencesStore,
 };
 
 /// Coordinates preferences reads through an injected persistence contract.
 pub struct UserPreferencesService<R> {
     repository: R,
 }
+
 impl<R> UserPreferencesService<R> {
     /// Creates the service without opening connections or changing data.
     pub fn new(repository: R) -> Self {
         Self { repository }
     }
 }
+
 impl<R: UserPreferencesStore> UserPreferencesReads for UserPreferencesService<R> {
     async fn get_preferences(&self, user_id: Uuid) -> Result<UserPreferences, UserReadError> {
         self.repository
@@ -26,6 +28,7 @@ impl<R: UserPreferencesStore> UserPreferencesReads for UserPreferencesService<R>
             .ok_or(UserReadError::NotFound)
     }
 }
+
 #[cfg(test)]
 mod tests {
     //! Tests preferences reads with deterministic injected persistence outcomes.
@@ -33,9 +36,11 @@ mod tests {
     //! - `reports_absence`: translates normal absence to required-object failure.
     //! - `preserves_success`: returns stored information and forwards identity scope.
     //! - `translates_failures`: preserves every structured failure category.
+
     use super::*;
     use crate::users::errors::UserRepositoryError;
     use crate::users::models::*;
+
     /// One outcome generated deterministically for each lookup.
     #[derive(Clone, Copy)]
     enum Outcome {
@@ -47,10 +52,12 @@ mod tests {
         UserMismatch,
         ContactMismatch,
     }
+
     /// Repository double that asserts identity arguments and supplies controlled outcomes.
     struct FakeStore {
         outcome: Outcome,
     }
+
     fn failure(outcome: Outcome) -> UserRepositoryError {
         let cause = || {
             Box::new(std::io::Error::other("private diagnostic"))
@@ -71,6 +78,7 @@ mod tests {
             _ => unreachable!("only failure outcomes reach the failure fixture"),
         }
     }
+
     impl UserPreferencesStore for FakeStore {
         async fn get_preferences(
             &self,
@@ -88,6 +96,7 @@ mod tests {
             }
         }
     }
+
     #[tokio::test]
     async fn reports_absence() {
         let service = UserPreferencesService::new(FakeStore {
@@ -98,6 +107,7 @@ mod tests {
             Err(UserReadError::NotFound)
         ));
     }
+
     #[tokio::test]
     async fn preserves_success() {
         let service = UserPreferencesService::new(FakeStore {
@@ -107,6 +117,7 @@ mod tests {
         assert!(value.allow_notifications);
         assert_eq!(value.id, Uuid::from_u128(3));
     }
+
     #[tokio::test]
     async fn translates_failures() {
         for outcome in [

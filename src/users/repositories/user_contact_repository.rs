@@ -2,11 +2,11 @@
 
 use sqlx::{PgPool, types::Uuid};
 
-use super::rows::{ContactRow, storage_error};
+use super::storage_error::storage_error;
 use crate::users::{
     errors::UserRepositoryError,
-    models::{ActiveContact, StoredContact, UserContact},
-    traits::UserContactStore,
+    models::{ActiveContact, ContactData, StoredContact, UserContact},
+    repositories::UserContactStore,
 };
 
 /// Reads persisted contact records using an injected, cheaply cloned connection pool.
@@ -22,8 +22,8 @@ impl UserContactRepository {
         &self,
         user_id: Uuid,
         contact_id: Uuid,
-    ) -> Result<Option<ContactRow>, UserRepositoryError> {
-        sqlx::query_as::<_, ContactRow>("SELECT id, user_contact_type, value, states, user_id, created_at, updated_at FROM user_contacts WHERE user_id = $1 AND id = $2").bind(user_id).bind(contact_id).fetch_optional(&self.pool).await.map_err(storage_error)
+    ) -> Result<Option<ContactData>, UserRepositoryError> {
+        sqlx::query_as::<_, ContactData>("SELECT id, user_contact_type, value, states, user_id, created_at, updated_at FROM user_contacts WHERE user_id = $1 AND id = $2").bind(user_id).bind(contact_id).fetch_optional(&self.pool).await.map_err(storage_error)
     }
 }
 impl UserContactStore for UserContactRepository {
@@ -34,7 +34,7 @@ impl UserContactStore for UserContactRepository {
     ) -> Result<Option<StoredContact>, UserRepositoryError> {
         self.load(user_id, contact_id)
             .await?
-            .map(ContactRow::validate)
+            .map(|data| data.validate().map_err(Into::into))
             .transpose()
     }
     async fn get_active_contact(
@@ -44,7 +44,7 @@ impl UserContactStore for UserContactRepository {
     ) -> Result<Option<UserContact<ActiveContact>>, UserRepositoryError> {
         self.load(user_id, contact_id)
             .await?
-            .map(|row| UserContact::<ActiveContact>::from_persisted(row.into()).map_err(Into::into))
+            .map(|row| UserContact::<ActiveContact>::from_persisted(row).map_err(Into::into))
             .transpose()
     }
 }
@@ -71,11 +71,10 @@ mod tests {
             Err(UserRepositoryError::Unavailable { .. })
         ));
     }
-    use super::super::rows::*;
-    fn row(state: StoredContactState) -> ContactRow {
-        ContactRow {
+    fn row(state: UserContactState) -> ContactData {
+        ContactData {
             id: Uuid::nil(),
-            contact_type: StoredContactType::PhoneNumber,
+            contact_type: UserContactType::PhoneNumber,
             value: "test".into(),
             state,
             user_id: Uuid::nil(),
@@ -86,23 +85,23 @@ mod tests {
     #[test]
     fn validates_every_state() {
         assert!(matches!(
-            row(StoredContactState::Unverified).validate().unwrap(),
+            row(UserContactState::Unverified).validate().unwrap(),
             StoredContact::Unverified(_)
         ));
         assert!(matches!(
-            row(StoredContactState::Active).validate().unwrap(),
+            row(UserContactState::Active).validate().unwrap(),
             StoredContact::Active(_)
         ));
         assert!(matches!(
-            row(StoredContactState::Disabled).validate().unwrap(),
+            row(UserContactState::Disabled).validate().unwrap(),
             StoredContact::Disabled(_)
         ));
     }
     #[test]
     fn rejects_wrong_active_state() {
-        for state in [StoredContactState::Unverified, StoredContactState::Disabled] {
+        for state in [UserContactState::Unverified, UserContactState::Disabled] {
             assert!(matches!(
-                UserContact::<ActiveContact>::from_persisted(row(state).into()),
+                UserContact::<ActiveContact>::from_persisted(row(state)),
                 Err(crate::users::errors::UserError::ContactStateMismatch { .. })
             ));
         }

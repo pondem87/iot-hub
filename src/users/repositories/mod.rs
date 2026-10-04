@@ -1,5 +1,7 @@
-//! PostgreSQL adapters; raw rows stay within the users persistence boundary.
-pub(super) mod rows;
+//! PostgreSQL adapters; decoded data is validated within the repository boundary.
+mod storage_error;
+mod traits;
+pub use traits::{UserContactStore, UserPreferencesStore, UserProfileStore, UserStore};
 mod user_account_repository;
 pub use user_account_repository::UserRepository;
 mod user_profile_repository;
