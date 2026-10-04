@@ -2,22 +2,26 @@
 
 use sqlx::types::Uuid;
 
+use super::UserAccountReads;
+
 use crate::users::{
     errors::UserReadError,
     models::{ActiveUser, StoredUser, User},
-    traits::{UserAccountReads, UserStore},
+    repositories::UserStore,
 };
 
 /// Coordinates account reads through an injected persistence contract.
 pub struct UserAccountService<R> {
     repository: R,
 }
+
 impl<R> UserAccountService<R> {
     /// Creates the service without opening connections or changing data.
     pub fn new(repository: R) -> Self {
         Self { repository }
     }
 }
+
 impl<R: UserStore> UserAccountReads for UserAccountService<R> {
     async fn get_user_by_id(&self, id: Uuid) -> Result<StoredUser, UserReadError> {
         self.repository
@@ -25,6 +29,7 @@ impl<R: UserStore> UserAccountReads for UserAccountService<R> {
             .await?
             .ok_or(UserReadError::NotFound)
     }
+
     async fn get_active_user(&self, id: Uuid) -> Result<User<ActiveUser>, UserReadError> {
         self.repository
             .get_active_user(id)
@@ -32,6 +37,7 @@ impl<R: UserStore> UserAccountReads for UserAccountService<R> {
             .ok_or(UserReadError::NotFound)
     }
 }
+
 #[cfg(test)]
 mod tests {
     //! Tests account reads with deterministic injected persistence outcomes.
@@ -40,9 +46,11 @@ mod tests {
     //! - `preserves_success`: returns stored information and forwards identity scope.
     //! - `translates_failures`: preserves every structured failure category.
     //! - `active_lookup_preserves_outcomes`: preserves success, absence and mismatch for active reads.
+
     use super::*;
     use crate::users::errors::UserRepositoryError;
     use crate::users::models::*;
+
     /// One outcome generated deterministically for each lookup.
     #[derive(Clone, Copy)]
     enum Outcome {
@@ -54,10 +62,12 @@ mod tests {
         UserMismatch,
         ContactMismatch,
     }
+
     /// Repository double that asserts identity arguments and supplies controlled outcomes.
     struct FakeStore {
         outcome: Outcome,
     }
+
     fn failure(outcome: Outcome) -> UserRepositoryError {
         let cause = || {
             Box::new(std::io::Error::other("private diagnostic"))
@@ -78,6 +88,7 @@ mod tests {
             _ => unreachable!("only failure outcomes reach the failure fixture"),
         }
     }
+
     fn active() -> User<ActiveUser> {
         User::<ActiveUser>::from_persisted(crate::users::models::UserData {
             id: Uuid::nil(),
@@ -91,6 +102,7 @@ mod tests {
         })
         .unwrap()
     }
+
     impl UserStore for FakeStore {
         async fn get_user_by_id(
             &self,
@@ -103,6 +115,7 @@ mod tests {
                 failure_outcome => Err(failure(failure_outcome)),
             }
         }
+
         async fn get_active_user(
             &self,
             id: Uuid,
@@ -115,6 +128,7 @@ mod tests {
             }
         }
     }
+
     #[tokio::test]
     async fn reports_absence() {
         let service = UserAccountService::new(FakeStore {
@@ -125,6 +139,7 @@ mod tests {
             Err(UserReadError::NotFound)
         ));
     }
+
     #[tokio::test]
     async fn preserves_success() {
         let service = UserAccountService::new(FakeStore {
@@ -135,6 +150,7 @@ mod tests {
             matches!(value, StoredUser::Active(user) if user.id() == Uuid::nil() && user.phone_number() == "phone")
         );
     }
+
     #[tokio::test]
     async fn translates_failures() {
         for outcome in [
@@ -171,6 +187,7 @@ mod tests {
             assert!(!error.to_string().contains("private diagnostic"));
         }
     }
+
     #[tokio::test]
     async fn active_lookup_preserves_outcomes() {
         let success = UserAccountService::new(FakeStore {

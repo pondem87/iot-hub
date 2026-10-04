@@ -34,7 +34,7 @@ implementation evidence and open decisions. Follow the
 | Services | Implement business capabilities and coordinate domain operations, repositories, and event publication. |
 | Domain models | Represent business concepts and enforce invariants and state-dependent operations. |
 | Repositories | Own SQL, persistence mapping, and checked conversion from stored rows to domain objects. |
-| Traits | Define contracts consumed across component boundaries or by alternative implementations. |
+| Traits | External service contracts belong in the domain service entry point; local service and persistence contracts live with their owning implementations. |
 | Events, publishers, and handlers | Describe domain occurrences and connect business workflows. |
 | Application composition and shared state | Construct dependencies and provide services with the resources they need. |
 
@@ -59,9 +59,79 @@ crate-visible APIs. Constructors and private helpers may remain inherent methods
 Consumers should depend on the service contract where practical, and that contract
 must expose the types and failure outcomes needed to use it correctly.
 
+A domain's `app.rs` is reserved for established external service traits and
+factory functions returning concrete implementations. External means consumers
+outside that domain, including other domains and application adapters. Factories
+compose supplied dependencies; consumers invoke operations through service traits.
+The users domain's exported capabilities and factory signatures are not established
+yet, so its root `app.rs` remains a documented placeholder.
+See [ADR-005](docs/decisions/005-service-contract-entry-points.md) for the ownership
+and compatibility trade-offs.
+
 Keep state transitions and authorization decisions in the relevant domain or
 service. A repository's state check guarantees that the returned type matches the
 loaded data; it does not establish the caller's permission to perform an operation.
+
+### Users module structure and trait ownership
+
+The current users module separates the reserved external API from existing local
+services and persistence. Its relevant files are:
+
+```text
+src/users/
+    mod.rs
+    app.rs
+    services/
+        mod.rs
+        traits.rs
+        user_account_service.rs
+        user_profile_service.rs
+        user_preferences_service.rs
+        user_contact_service.rs
+    repositories/
+        mod.rs
+        traits.rs
+        storage_error.rs
+        user_account_repository.rs
+        user_profile_repository.rs
+        user_preferences_repository.rs
+        user_contact_repository.rs
+    models.rs
+    errors.rs
+```
+
+- **External service API:** [app.rs](src/users/app.rs) is reserved for
+  the traits and factories selected for external use. It currently contains only
+  module documentation; the presence of a local service does not select it for
+  this API.
+- **Local services:** [services/](src/users/services/mod.rs) contains the existing
+  application implementations, compiled in normal builds. Its `traits.rs` owns
+  `UserAccountReads`, `UserProfileReads`, `UserPreferencesReads`, and
+  `UserContactReads`. The directory's module exports these contracts alongside
+  their concrete implementations as `users::services`.
+- **Persistence:** [repositories/traits.rs](src/users/repositories/traits.rs) owns
+  `UserStore`, `UserProfileStore`, `UserPreferencesStore`, and `UserContactStore`.
+  The repository module exports these contracts and their PostgreSQL adapters as
+  `users::repositories`. SQL and technical error translation stay in this layer.
+- **Module wiring:** [users/mod.rs](src/users/mod.rs) declares `app` and `services`
+  using standard Rust module resolution: `app.rs` provides `users::app`, and
+  `services/mod.rs` provides `users::services`. The implementation exports are
+  available to local composition and tests; the external service API remains a
+  separate design decision.
+
+Each local service implements its read trait and receives a repository through
+its constructor. For example, `UserAccountService<R>` implements
+`UserAccountReads` when `R: UserStore`; `UserRepository` implements `UserStore`
+using PostgreSQL. Profile, preference, and contact services follow the same
+pattern. Tests supply repository doubles through these same contracts. The async
+traits return `impl Future + Send`, and current consumers use generic dispatch;
+the interfaces do not promise trait-object support.
+
+An account read calls the `UserStore` contract, whose implementation decodes
+`UserData` and validates the lifecycle before returning `StoredUser` or a specific
+`User<State>`. The service translates optional absence into `UserReadError::NotFound`
+and maps repository failures into its service error contract. These checks retain
+their responsibilities regardless of how the future external API is composed.
 
 ## Repository state contract
 
@@ -111,6 +181,14 @@ and inactive users. Keep raw rows and unchecked `AnyUser`-style representations
 internal to persistence conversion; they must not substitute for validated
 typestate results at the repository boundary. Apply the same state verification
 to objects returned from inserts or updates.
+
+Use a single internal `<Model>Data` type deriving `sqlx::FromRow` as the decoded
+representation for a lifecycle model, followed by checked construction. Avoid a
+redundant row-to-data copy layer. Plain models with no checked-construction
+invariants may map directly. See the
+[style guide](STYLE_GUIDE.md#repository-return-types-and-state-validation) for
+mapping conventions. Repositories still own queries, invoke validation, and
+translate domain and SQLx failures into repository outcomes.
 
 Runtime state enums remain useful in persistence and transport representations.
 Generic markers and `PhantomData` do not establish that a database row has the

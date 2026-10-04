@@ -2,22 +2,26 @@
 
 use sqlx::types::Uuid;
 
+use super::UserContactReads;
+
 use crate::users::{
     errors::UserReadError,
     models::{ActiveContact, StoredContact, UserContact},
-    traits::{UserContactReads, UserContactStore},
+    repositories::UserContactStore,
 };
 
 /// Coordinates contact reads through an injected persistence contract.
 pub struct UserContactService<R> {
     repository: R,
 }
+
 impl<R> UserContactService<R> {
     /// Creates the service without opening connections or changing data.
     pub fn new(repository: R) -> Self {
         Self { repository }
     }
 }
+
 impl<R: UserContactStore> UserContactReads for UserContactService<R> {
     async fn get_contact(
         &self,
@@ -29,6 +33,7 @@ impl<R: UserContactStore> UserContactReads for UserContactService<R> {
             .await?
             .ok_or(UserReadError::NotFound)
     }
+
     async fn get_active_contact(
         &self,
         user_id: Uuid,
@@ -40,6 +45,7 @@ impl<R: UserContactStore> UserContactReads for UserContactService<R> {
             .ok_or(UserReadError::NotFound)
     }
 }
+
 #[cfg(test)]
 mod tests {
     //! Tests contact reads with deterministic injected persistence outcomes.
@@ -48,9 +54,11 @@ mod tests {
     //! - `preserves_success`: returns stored information and forwards identity scope.
     //! - `translates_failures`: preserves every structured failure category.
     //! - `active_lookup_preserves_outcomes`: preserves success, absence and mismatch for active reads.
+
     use super::*;
     use crate::users::errors::UserRepositoryError;
     use crate::users::models::*;
+
     /// One outcome generated deterministically for each lookup.
     #[derive(Clone, Copy)]
     enum Outcome {
@@ -62,10 +70,12 @@ mod tests {
         UserMismatch,
         ContactMismatch,
     }
+
     /// Repository double that asserts identity arguments and supplies controlled outcomes.
     struct FakeStore {
         outcome: Outcome,
     }
+
     fn failure(outcome: Outcome) -> UserRepositoryError {
         let cause = || {
             Box::new(std::io::Error::other("private diagnostic"))
@@ -86,6 +96,7 @@ mod tests {
             _ => unreachable!("only failure outcomes reach the failure fixture"),
         }
     }
+
     fn active() -> UserContact<ActiveContact> {
         UserContact::<ActiveContact>::from_persisted(crate::users::models::ContactData {
             id: Uuid::from_u128(1),
@@ -98,6 +109,7 @@ mod tests {
         })
         .unwrap()
     }
+
     impl UserContactStore for FakeStore {
         async fn get_contact(
             &self,
@@ -112,6 +124,7 @@ mod tests {
                 failure_outcome => Err(failure(failure_outcome)),
             }
         }
+
         async fn get_active_contact(
             &self,
             user_id: Uuid,
@@ -126,6 +139,7 @@ mod tests {
             }
         }
     }
+
     #[tokio::test]
     async fn reports_absence() {
         let service = UserContactService::new(FakeStore {
@@ -136,6 +150,7 @@ mod tests {
             Err(UserReadError::NotFound)
         ));
     }
+
     #[tokio::test]
     async fn preserves_success() {
         let service = UserContactService::new(FakeStore {
@@ -149,6 +164,7 @@ mod tests {
             matches!(value, StoredContact::Active(contact) if contact.id() == Uuid::from_u128(1) && contact.user_id() == Uuid::nil() && contact.value() == "phone")
         );
     }
+
     #[tokio::test]
     async fn translates_failures() {
         for outcome in [
@@ -188,6 +204,7 @@ mod tests {
             assert!(!error.to_string().contains("private diagnostic"));
         }
     }
+
     #[tokio::test]
     async fn active_lookup_preserves_outcomes() {
         let success = UserContactService::new(FakeStore {

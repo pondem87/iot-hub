@@ -19,14 +19,16 @@ named file. When a domain has multiple services or repositories, use separate
 
 ```text
 users/
+    app.rs
     services/
         mod.rs
+        traits.rs
         user_account_service.rs
         user_profile_service.rs
         user_preferences_service.rs
-    traits.rs
     repositories/
         mod.rs
+        traits.rs
         user_repository.rs
         user_profile_repository.rs
         user_preferences_repository.rs
@@ -34,14 +36,20 @@ users/
     models.rs
 ```
 
-Keep declarations and exports in each directory's `mod.rs`. An implementation
-file may contain private supporting types, inherent and trait implementations for
-its service or repository, and its tests. Do not combine multiple services or
-multiple repositories in one file, or place a repository implementation in its
-service's file. A domain with only one service or repository may retain a single
-`services.rs` or `repositories.rs` file. This rule does not require one model,
-event, or trait per file. Each repository file containing behavior must also
-follow the test-module requirements below.
+Keep the external entry point `app.rs` separate from local implementations under
+`services/`. Declare `app` and `services` normally in the domain's `mod.rs`;
+`app.rs` and `services/mod.rs` resolve without custom module paths. Keep local
+read contracts in `services/traits.rs` and repository contracts in
+`repositories/traits.rs`.
+Keep repository declarations and exports in `repositories/mod.rs`. Implementation
+files may contain private supporting types, constructors, trait implementations,
+and tests. Do not combine multiple service or repository implementations in one
+file, or place a repository implementation in its service's file. Keep service
+implementations under `services/` even when there is only one, reserving
+`app.rs` for the contracts and factories described below. A domain with one
+repository may retain `repositories.rs` until a directory is needed. This rule
+does not require one model, event, or trait per file. Each file containing behavior
+must also follow the test-module requirements below.
 
 ### Service contracts
 
@@ -50,12 +58,30 @@ publicly accessible service must implement a trait covering its business
 operations. Implementing only a utility trait such as `Clone` does not satisfy
 this rule.
 
-Put shared service contracts in the domain's `traits.rs` and expose them at the
-visibility needed by consumers. Constructors and private helpers may remain
-inherent methods. Keep business operations on the trait rather than adding a
-parallel public inherent API. Consumers should depend on the contract where
-practical; choose generics or trait objects according to the interface's needs.
-Do not assume every async trait supports dynamic dispatch.
+Put service contracts offered to consumers outside the domain in its `app.rs`.
+Reserve this module for those traits, factory functions returning concrete service
+implementations, any types required by those contracts, and factory tests.
+Here, external consumers means other domains or application adapters, not only
+remote systems. Add exports and factories only after the domain's external
+capabilities have been established. Until then, keep `app.rs` as a documented
+placeholder; existing implementation code does not establish an approved external
+API. Local services remain normal application code with their own contracts and
+tests, independently of the external entry point.
+
+Place persistence contracts such as `UserStore` in `repositories/traits.rs` and
+re-export them through the repository module. Other internal contracts belong
+with their owning component; do not collect unrelated contracts in a domain-wide
+`traits.rs`. Use the visibility required by consumers and test adapters.
+
+Factories accept existing dependencies and wire concrete implementations without
+opening hidden connections. Select their inputs and concrete return types when
+the exported capabilities are established, rather than inferring them from
+existing implementations. Retain dependency-injecting constructors for unit tests
+and alternative adapters. Constructors and private
+helpers may remain inherent methods. Keep business operations on the trait rather
+than adding a parallel public inherent API. Consumers should depend on the contract
+where practical; choose generics or trait objects according to the interface's
+needs. Do not assume every async trait supports dynamic dispatch.
 
 For example, this self-contained illustration shows a small preference service;
 it is a target pattern, not the current persistence-backed implementation:
@@ -88,6 +114,53 @@ impl NotificationPreferences for UserPreferencesService {
 
 In the project, place the trait and service in their respective modules and add
 the tests shown below to the service file.
+
+## Rust source spacing
+
+Use explicit blank lines to make logical boundaries visible in handwritten and
+agent-generated Rust code. Apply these rules when creating or editing code:
+
+- Put one blank line between adjacent structs, enums, traits, functions, and
+  `impl` blocks, including between a type definition and its implementation.
+- Put one blank line between methods in an `impl` or trait, and between tests
+  and test helpers. Separate the test module from the preceding production code.
+- Put one blank line after module documentation and after the final import group
+  before declarations or other code. Keep related imports together; do not add a
+  blank line between every `use`, `mod`, or re-export declaration.
+- Keep Rustdoc comments and attributes attached to the item they describe. Place
+  the separating blank line before the documentation or attributes, never between
+  them and the item.
+- Inside functions, separate meaningful steps with one blank line, such as input
+  validation, data retrieval, and result construction. Keep closely related
+  statements together; do not separate every statement or field.
+- Avoid multiple consecutive blank lines and empty padding immediately inside
+  opening or closing braces.
+
+For example, this excerpt separates a type, its implementation, and its methods:
+
+```rust
+/// A recorded numeric reading.
+pub struct Reading {
+    value: u64,
+}
+
+impl Reading {
+    /// Creates a reading with the supplied value.
+    pub fn new(value: u64) -> Self {
+        Self { value }
+    }
+
+    /// Returns the recorded value.
+    pub fn value(&self) -> u64 {
+        self.value
+    }
+}
+```
+
+Authors and coding agents must insert this spacing before running `cargo fmt`.
+Format on save and `cargo fmt` do not insert all of these logical separators;
+a passing `cargo fmt --check` alone does not establish compliance. Review source
+spacing alongside the [required validation](CONTRIBUTING.md#validate-and-report-results).
 
 ## Rust documentation
 
@@ -168,10 +241,25 @@ mismatch error; never return `None` or panic. Reserve `None` for a genuinely abs
 row when the lookup's contract allows absence. Document these outcomes in the
 repository method's Rustdoc, including its `# Errors` section.
 
-Do not deserialize or derive database mapping directly into arbitrary trusted
-typestates without validation. Where a database mapping contains a phantom field,
-exclude it from column mapping, for example with `#[sqlx(skip)]`; skipping the
-field does not validate the state. Keep marker fields out of serialized data.
+Use one internal `<Model>Data` struct with `#[derive(sqlx::FromRow)]` to decode
+persisted fields for a lifecycle model. Retain the stored runtime state in this
+struct, then consume it through checked construction of the trusted typestate.
+Do not introduce a duplicate `<Model>Row` struct merely to copy fields into
+`<Model>Data`. For example, user reads follow `SQL row → UserData → User<State>`;
+repository results expose only the validated object or an enum of validated states.
+Keep data structs and checked constructors at the narrowest useful visibility.
+
+Keep column and enum mappings explicit on the data fields and runtime enums,
+including PostgreSQL type names and stored spellings. `FromRow` decodes data; it
+does not establish lifecycle validity. Do not derive `FromRow` or unchecked
+serialization-based construction on trusted typestate models. Marker fields belong
+only to validated objects and must stay out of persisted and serialized data.
+
+Plain models without lifecycle or other checked-construction invariants, such as
+`UserProfile` and `UserPreferences`, may derive `FromRow` directly when their shape
+matches the query. Do not add a separate data struct solely to copy identical
+fields. SQL execution and technical error translation remain in repositories;
+checked model construction returns domain errors for repositories to translate.
 
 Use typestate for lifecycle concepts such as users, contacts, verification codes,
 and invitations as their behavior is implemented. User roles and contact kinds

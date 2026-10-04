@@ -22,6 +22,7 @@ pub struct CreateUserOutput {
     /// Profile name in the existing scaffold transport representation.
     pub name: String,
 }
+
 #[cfg(test)]
 mod tests {
     //! Tests registration scaffold response encoding.

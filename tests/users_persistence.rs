@@ -15,21 +15,20 @@ mod tests {
     //! - `reports_invalid_stored_data`: rejects unsupported user and contact enum values.
     //! - `reports_decoding_failures`: rejects a malformed profile column and missing preference column.
     //! - `reports_database_failures`: translates a permission failure into an operational outcome.
-    //! - `services_read_through_postgres`: composes all four services over migrated adapters.
+    //! - `services_read_through_postgres`: composes all four local read services over migrated adapters.
     use iot_hub::users::{
         errors::{UserReadError, UserRepositoryError},
         models::{
             StoredContact, StoredUser, UserContactState, UserContactType, UserState, UserType,
         },
         repositories::{
-            UserContactRepository, UserPreferencesRepository, UserProfileRepository, UserRepository,
+            UserContactRepository, UserContactStore, UserPreferencesRepository,
+            UserPreferencesStore, UserProfileRepository, UserProfileStore, UserRepository,
+            UserStore,
         },
         services::{
-            UserAccountService, UserContactService, UserPreferencesService, UserProfileService,
-        },
-        traits::{
-            UserAccountReads, UserContactReads, UserContactStore, UserPreferencesReads,
-            UserPreferencesStore, UserProfileReads, UserProfileStore, UserStore,
+            UserAccountReads, UserAccountService, UserContactReads, UserContactService,
+            UserPreferencesReads, UserPreferencesService, UserProfileReads, UserProfileService,
         },
     };
     use sqlx::{PgPool, types::Uuid};

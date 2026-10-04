@@ -1,73 +1,107 @@
 //! Lifecycle types validated by persistence adapters; transitions await business policy.
-use chrono::{DateTime, Utc};
-use sqlx::types::Uuid;
 use std::marker::PhantomData;
+
+use chrono::{DateTime, Utc};
+use sqlx::FromRow;
+use sqlx::types::Uuid;
+
+use super::errors::UserError;
+
 /// Persisted role classifications; organisation role semantics remain unresolved.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, sqlx::Type)]
+#[sqlx(type_name = "user_type")]
 pub enum UserType {
     /// Represents the superuser classification.
+    #[sqlx(rename = "superuser")]
     Superuser,
     /// Represents the staff classification.
+    #[sqlx(rename = "staff")]
     Staff,
     /// Represents the customer classification.
+    #[sqlx(rename = "customer")]
     Customer,
 }
+
 /// Persisted account lifecycle values; transition policy remains unresolved.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, sqlx::Type)]
+#[sqlx(type_name = "user_state")]
 pub enum UserState {
     /// Represents the unverified classification.
+    #[sqlx(rename = "unverified")]
     Unverified,
     /// Represents the active classification.
+    #[sqlx(rename = "active")]
     Active,
     /// Represents the inactive classification.
+    #[sqlx(rename = "inactive")]
     Inactive,
     /// Represents the barred classification.
+    #[sqlx(rename = "barred")]
     Barred,
     /// Represents the deleted classification.
+    #[sqlx(rename = "deleted")]
     Deleted,
 }
+
 /// Classifies the communication identifier independently of its lifecycle.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, sqlx::Type)]
+#[sqlx(type_name = "user_contact_type")]
 pub enum UserContactType {
     /// Represents the phonenumber classification.
+    #[sqlx(rename = "phonenumber")]
     PhoneNumber,
     /// Represents the emailaddress classification.
+    #[sqlx(rename = "emailaddress")]
     EmailAddress,
 }
+
 /// Persisted contact lifecycle values; transition policy remains unresolved.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, sqlx::Type)]
+#[sqlx(type_name = "user_contact_state")]
 pub enum UserContactState {
     /// Represents the unverified classification.
+    #[sqlx(rename = "unverified")]
     Unverified,
     /// Represents the active classification.
+    #[sqlx(rename = "active")]
     Active,
     /// Represents the disabled classification.
+    #[sqlx(rename = "disabled")]
     Disabled,
 }
+
 /// Marks a validated unverified user; no transitions are yet defined.
 #[derive(Debug)]
 pub struct UnverifiedUser;
+
 /// Marks a validated active user; no transitions are yet defined.
 #[derive(Debug)]
 pub struct ActiveUser;
+
 /// Marks a validated inactive user; no transitions are yet defined.
 #[derive(Debug)]
 pub struct InactiveUser;
+
 /// Marks a validated barred user; no transitions are yet defined.
 #[derive(Debug)]
 pub struct BarredUser;
+
 /// Marks a validated deleted user; no transitions are yet defined.
 #[derive(Debug)]
 pub struct DeletedUser;
+
 /// Marks a validated unverified contact; no transitions are yet defined.
 #[derive(Debug)]
 pub struct UnverifiedContact;
+
 /// Marks a validated active contact; no transitions are yet defined.
 #[derive(Debug)]
 pub struct ActiveContact;
+
 /// Marks a validated disabled contact; no transitions are yet defined.
 #[derive(Debug)]
 pub struct DisabledContact;
+
 /// A user whose lifecycle is validated before construction.
 /// Reads a typed user identity without granting access permissions.
 /// ```
@@ -101,6 +135,7 @@ pub struct User<State> {
     updated_at: DateTime<Utc>,
     state_marker: PhantomData<State>,
 }
+
 impl<State> std::fmt::Debug for User<State> {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         formatter
@@ -110,31 +145,38 @@ impl<State> std::fmt::Debug for User<State> {
             .finish_non_exhaustive()
     }
 }
+
 impl<State> User<State> {
     /// Returns the stored id value; this is not an authorization decision.
     pub fn id(&self) -> Uuid {
         self.id
     }
+
     /// Returns the stored phone_number value; this is not an authorization decision.
     pub fn phone_number(&self) -> &str {
         &self.phone_number
     }
+
     /// Returns the stored user_type value; this is not an authorization decision.
     pub fn user_type(&self) -> UserType {
         self.user_type
     }
+
     /// Returns the stored state value; this is not an authorization decision.
     pub fn state(&self) -> UserState {
         self.state
     }
+
     /// Returns the stored profile_id value; this is not an authorization decision.
     pub fn profile_id(&self) -> Uuid {
         self.profile_id
     }
+
     /// Returns the stored preferences_id value; this is not an authorization decision.
     pub fn preferences_id(&self) -> Uuid {
         self.preferences_id
     }
+
     /// Returns the stored created_at value; this is not an authorization decision.
     pub fn created_at(&self) -> DateTime<Utc> {
         self.created_at
@@ -144,6 +186,7 @@ impl<State> User<State> {
         self.updated_at
     }
 }
+
 /// A contact whose lifecycle is validated before construction.
 /// ```
 /// use iot_hub::users::models::{UserContact, ActiveContact};
@@ -159,6 +202,7 @@ pub struct UserContact<State> {
     updated_at: DateTime<Utc>,
     state_marker: PhantomData<State>,
 }
+
 impl<State> std::fmt::Debug for UserContact<State> {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         formatter
@@ -168,36 +212,44 @@ impl<State> std::fmt::Debug for UserContact<State> {
             .finish_non_exhaustive()
     }
 }
+
 impl<State> UserContact<State> {
     /// Returns the stored id value; this is not an authorization decision.
     pub fn id(&self) -> Uuid {
         self.id
     }
+
     /// Returns the stored contact_type value; this is not an authorization decision.
     pub fn contact_type(&self) -> UserContactType {
         self.contact_type
     }
+
     /// Returns the stored value value; this is not an authorization decision.
     pub fn value(&self) -> &str {
         &self.value
     }
+
     /// Returns the stored state value; this is not an authorization decision.
     pub fn state(&self) -> UserContactState {
         self.state
     }
+
     /// Returns the stored user_id value; this is not an authorization decision.
     pub fn user_id(&self) -> Uuid {
         self.user_id
     }
+
     /// Returns the stored created_at value; this is not an authorization decision.
     pub fn created_at(&self) -> DateTime<Utc> {
         self.created_at
     }
+
     /// Returns the stored updated_at value; this is not an authorization decision.
     pub fn updated_at(&self) -> DateTime<Utc> {
         self.updated_at
     }
 }
+
 /// Validated alternatives for a lookup accepting every stored lifecycle state.
 #[derive(Debug)]
 pub enum StoredUser {
@@ -212,6 +264,7 @@ pub enum StoredUser {
     /// Contains a validated deleted object.
     Deleted(User<DeletedUser>),
 }
+
 /// Validated alternatives for a lookup accepting every stored lifecycle state.
 #[derive(Debug)]
 pub enum StoredContact {
@@ -222,8 +275,9 @@ pub enum StoredContact {
     /// Contains a validated disabled object.
     Disabled(UserContact<DisabledContact>),
 }
+
 /// Persisted UserProfile information with no lifecycle state.
-#[derive(Debug)]
+#[derive(Debug, FromRow)]
 pub struct UserProfile {
     /// Stored id value.
     pub id: Uuid,
@@ -232,8 +286,9 @@ pub struct UserProfile {
     /// Stored updated_at value.
     pub updated_at: DateTime<Utc>,
 }
+
 /// Persisted UserPreferences information with no lifecycle state.
-#[derive(Debug)]
+#[derive(Debug, FromRow)]
 pub struct UserPreferences {
     /// Stored id value.
     pub id: Uuid,
@@ -268,6 +323,7 @@ impl User<UnverifiedUser> {
         })
     }
 }
+
 impl User<ActiveUser> {
     /// Constructs this typestate only after checking the persisted lifecycle value.
     /// # Errors
@@ -293,6 +349,7 @@ impl User<ActiveUser> {
         })
     }
 }
+
 impl User<InactiveUser> {
     /// Constructs this typestate only after checking the persisted lifecycle value.
     /// # Errors
@@ -318,6 +375,7 @@ impl User<InactiveUser> {
         })
     }
 }
+
 impl User<BarredUser> {
     /// Constructs this typestate only after checking the persisted lifecycle value.
     /// # Errors
@@ -343,6 +401,7 @@ impl User<BarredUser> {
         })
     }
 }
+
 impl User<DeletedUser> {
     /// Constructs this typestate only after checking the persisted lifecycle value.
     /// # Errors
@@ -368,6 +427,7 @@ impl User<DeletedUser> {
         })
     }
 }
+
 impl UserContact<UnverifiedContact> {
     /// Constructs this typestate only after checking the persisted lifecycle value.
     /// # Errors
@@ -392,6 +452,7 @@ impl UserContact<UnverifiedContact> {
         })
     }
 }
+
 impl UserContact<ActiveContact> {
     /// Constructs this typestate only after checking the persisted lifecycle value.
     /// # Errors
@@ -416,6 +477,7 @@ impl UserContact<ActiveContact> {
         })
     }
 }
+
 impl UserContact<DisabledContact> {
     /// Constructs this typestate only after checking the persisted lifecycle value.
     /// # Errors
@@ -440,7 +502,9 @@ impl UserContact<DisabledContact> {
         })
     }
 }
+
 /// Internal untrusted UserData awaiting lifecycle validation.
+#[derive(FromRow)]
 pub(super) struct UserData {
     pub(super) id: Uuid,
     pub(super) phone_number: String,
@@ -451,21 +515,74 @@ pub(super) struct UserData {
     pub(super) created_at: DateTime<Utc>,
     pub(super) updated_at: DateTime<Utc>,
 }
+
 /// Internal untrusted ContactData awaiting lifecycle validation.
+#[derive(FromRow)]
 pub(super) struct ContactData {
     pub(super) id: Uuid,
+    #[sqlx(rename = "user_contact_type")]
     pub(super) contact_type: UserContactType,
     pub(super) value: String,
+    #[sqlx(rename = "states")]
     pub(super) state: UserContactState,
     pub(super) user_id: Uuid,
     pub(super) created_at: DateTime<Utc>,
     pub(super) updated_at: DateTime<Utc>,
 }
 
+impl UserData {
+    /// Consumes decoded data and checks construction of its stored lifecycle variant.
+    /// # Errors
+    /// Returns a state mismatch if checked construction rejects the stored state.
+    pub(super) fn validate(self) -> Result<StoredUser, UserError> {
+        match self.state {
+            UserState::Unverified => Ok(StoredUser::Unverified(
+                User::<UnverifiedUser>::from_persisted(self)?,
+            )),
+            UserState::Active => Ok(StoredUser::Active(User::<ActiveUser>::from_persisted(
+                self,
+            )?)),
+            UserState::Inactive => Ok(StoredUser::Inactive(User::<InactiveUser>::from_persisted(
+                self,
+            )?)),
+            UserState::Barred => Ok(StoredUser::Barred(User::<BarredUser>::from_persisted(
+                self,
+            )?)),
+            UserState::Deleted => Ok(StoredUser::Deleted(User::<DeletedUser>::from_persisted(
+                self,
+            )?)),
+        }
+    }
+}
+
+impl ContactData {
+    /// Consumes decoded data and checks construction of its stored lifecycle variant.
+    /// # Errors
+    /// Returns a state mismatch if checked construction rejects the stored state.
+    pub(super) fn validate(self) -> Result<StoredContact, UserError> {
+        match self.state {
+            UserContactState::Unverified => {
+                Ok(StoredContact::Unverified(
+                    UserContact::<UnverifiedContact>::from_persisted(self)?,
+                ))
+            }
+            UserContactState::Active => Ok(StoredContact::Active(
+                UserContact::<ActiveContact>::from_persisted(self)?,
+            )),
+            UserContactState::Disabled => {
+                Ok(StoredContact::Disabled(
+                    UserContact::<DisabledContact>::from_persisted(self)?,
+                ))
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     //! Tests checked lifecycle construction and immutable information.
     //! # Test plan
+    //! - `retains_sql_type_names`: preserves all four PostgreSQL enum identities.
     //! - `checks_user_states`: checks every constructor against every user state.
     //! - `checks_contact_states`: checks every constructor against every contact state.
     //! - `redacts_contact_details`: excludes phone and address values from domain Debug output.
@@ -473,7 +590,16 @@ mod tests {
     //!
     //! Rustdoc examples cover inaccessible construction and lifecycle mutation with valid companions.
     use super::*;
-    use crate::users::errors::UserError;
+
+    #[test]
+    fn retains_sql_type_names() {
+        use sqlx::{Type, TypeInfo};
+        assert_eq!(UserType::type_info().name(), "user_type");
+        assert_eq!(UserState::type_info().name(), "user_state");
+        assert_eq!(UserContactType::type_info().name(), "user_contact_type");
+        assert_eq!(UserContactState::type_info().name(), "user_contact_state");
+    }
+
     fn user_data(state: UserState) -> UserData {
         UserData {
             id: Uuid::from_u128(1),
@@ -486,6 +612,7 @@ mod tests {
             updated_at: DateTime::from_timestamp(1, 0).unwrap(),
         }
     }
+
     fn contact_data(state: UserContactState) -> ContactData {
         ContactData {
             id: Uuid::from_u128(4),
@@ -497,6 +624,7 @@ mod tests {
             updated_at: DateTime::from_timestamp(1, 0).unwrap(),
         }
     }
+
     #[test]
     fn checks_user_states() {
         let states = [
@@ -506,6 +634,7 @@ mod tests {
             UserState::Barred,
             UserState::Deleted,
         ];
+
         for expected in states {
             for actual in states {
                 let result = match expected {
@@ -522,6 +651,7 @@ mod tests {
                     UserState::Deleted => User::<DeletedUser>::from_persisted(user_data(actual))
                         .map(|user| user.state()),
                 };
+
                 if expected == actual {
                     assert_eq!(result.unwrap(), actual);
                 } else {
@@ -532,6 +662,7 @@ mod tests {
             }
         }
     }
+
     #[test]
     fn checks_contact_states() {
         let states = [
@@ -565,6 +696,7 @@ mod tests {
             }
         }
     }
+
     #[test]
     fn redacts_contact_details() {
         let user = User::<ActiveUser>::from_persisted(user_data(UserState::Active)).unwrap();
@@ -574,6 +706,7 @@ mod tests {
         assert!(!format!("{user:?}").contains("phone"));
         assert!(!format!("{contact:?}").contains("example@example.test"));
     }
+
     #[test]
     fn reads_stored_fields() {
         let user = User::<ActiveUser>::from_persisted(user_data(UserState::Active)).unwrap();

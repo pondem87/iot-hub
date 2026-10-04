@@ -18,14 +18,14 @@ implementation evidence only, not proof that the application builds or runs.
 | ID | Responsibility and contract | Business/data sources | Implementation evidence |
 | --- | --- | --- | --- |
 | <a id="app-1"></a>APP-1 | HTTP interface: parse requests, validate transport shapes, invoke service traits, and translate outcomes to safe responses. Public endpoints beyond health require design. | [REQ-2.5.1](002-detailed-requirements.md#req-2.5.1), [NFR-2.1](002-detailed-requirements.md#nfr-2.1) | [Router](../src/http/router.rs) defines GET / returning a health string; [server](../src/http/app.rs) uses Axum. User/auth handler scaffolds do not establish complete endpoints. |
-| <a id="app-2"></a>APP-2 | User domain and services: coordinate accounts, profiles, preferences, and contacts through documented service traits; models enforce state-dependent behavior. | [CAP-1](003-business-architecture.md#cap-1), [DATA-1](004-data-architecture.md#data-1), [DATA-2](004-data-architecture.md#data-2), [DATA-3](004-data-architecture.md#data-3), [DATA-4](004-data-architecture.md#data-4) | [Models](../src/users/models.rs) enforce private lifecycle fields and checked construction; [service contracts](../src/users/traits.rs) and [services](../src/users/services/mod.rs) implement account, profile, preference, and contact reads. Registration and lifecycle transitions remain deferred. |
+| <a id="app-2"></a>APP-2 | User domain and services: coordinate accounts, profiles, preferences, and contacts through documented service traits; models enforce state-dependent behavior. | [CAP-1](003-business-architecture.md#cap-1), [DATA-1](004-data-architecture.md#data-1), [DATA-2](004-data-architecture.md#data-2), [DATA-3](004-data-architecture.md#data-3), [DATA-4](004-data-architecture.md#data-4) | [Models](../src/users/models.rs) enforce private lifecycle fields and checked construction; [local read services](../src/users/services/mod.rs) retain tested account, profile, preference, and contact reads. The [external service entry point](../src/users/app.rs) is reserved; exported capabilities remain undecided. Registration and lifecycle transitions remain deferred. |
 | <a id="app-3"></a>APP-3 | Verification domain: generate, check, and clear codes for the requested proof purpose; return domain/use-case outcomes. | [CAP-3](003-business-architecture.md#cap-3), [DATA-9](004-data-architecture.md#data-9) | [Code traits](../src/v_codes/traits.rs) declare generation and validation; storage, expiry enforcement, and cleanup are not established by these declarations. |
 | <a id="app-4"></a>APP-4 | Event component: expose contracts for occurrences, publication, subscription, and handling. Publish after committed changes; document delivery guarantees. | [CAP-5](003-business-architecture.md#cap-5), [VS-1](003-business-architecture.md#vs-1) | [Traits](../src/events/traits.rs), [in-memory manager](../src/events/models.rs), and [user publisher](../src/users/event_publishers.rs) exist; handler dispatch uses spawned tasks. |
 | <a id="app-5"></a>APP-5 | Proposed notification/message services: determine permission and channel, prepare content, and coordinate dispatch through channel contracts. | [CAP-6](003-business-architecture.md#cap-6), [CAP-7](003-business-architecture.md#cap-7), [VS-2](003-business-architecture.md#vs-2) | Business maps establish responsibilities; the [messages module](../src/messages/mod.rs) is a scaffold, not evidence of an implemented workflow. |
 | <a id="app-6"></a>APP-6 | Proposed channel adapters: convey messages, including WhatsApp verification, while translating provider failures into port outcomes. | [CAP-8](003-business-architecture.md#cap-8), [CAP-9](003-business-architecture.md#cap-9), [REQ-2.1.2](002-detailed-requirements.md#req-2.1.2) | Provider contracts and configured delivery are not established by the inspected source; [OPEN-005-2](005-application-architecture.md#open-005-2). |
 | <a id="app-7"></a>APP-7 | Composition and shared dependencies: construct pools and adapters, run startup tasks, supply AppState, and handle top-level failures. | [TECH-1](006-technology-architecture.md#tech-1), [TECH-3](006-technology-architecture.md#tech-3) | [Entrypoint](../src/main.rs) wires pool, migrations, event manager, and HTTP; [AppState](../src/state.rs) shares pool/manager references. Startup correctness is not implied. |
 | <a id="app-8"></a>APP-8 | Future organisation/device capabilities: allocate membership, invitation, gateway, telemetry, threshold, and command use cases after business mapping is complete. | [CAP-2](003-business-architecture.md#cap-2), [CAP-4](003-business-architecture.md#cap-4), [REQ-5.1.1](002-detailed-requirements.md#req-5.1.1), [REQ-5.4.2](002-detailed-requirements.md#req-5.4.2) | This is a coverage placeholder, not a single prescribed service or implemented component; [OPEN-003-4](003-business-architecture.md#open-003-4), [OPEN-005-3](005-application-architecture.md#open-005-3). |
-| <a id="app-9"></a>APP-9 | Repositories: own SQL and mapping; return validated typestate objects and consumer-oriented persistence errors. | [DATA-1](004-data-architecture.md#data-1), [DATA-2](004-data-architecture.md#data-2), [DATA-3](004-data-architecture.md#data-3), [DATA-4](004-data-architecture.md#data-4) | [Repositories](../src/users/repositories/mod.rs) implement scoped reads for users, profiles, preferences, and contacts. Internal rows are decoded before checked conversion; active identity lookups distinguish state mismatch from absence. |
+| <a id="app-9"></a>APP-9 | Repositories: own SQL and mapping; return validated typestate objects and consumer-oriented persistence errors. | [DATA-1](004-data-architecture.md#data-1), [DATA-2](004-data-architecture.md#data-2), [DATA-3](004-data-architecture.md#data-3), [DATA-4](004-data-architecture.md#data-4) | [Repositories](../src/users/repositories/mod.rs) implement scoped reads for users, profiles, preferences, and contacts. Internal data structs are decoded before checked conversion; active identity lookups distinguish state mismatch from absence. |
 
 Service and repository implementations follow the style guide's file-separation
 rules. Services expose meaningful traits; the public operation signatures must
@@ -115,26 +115,33 @@ records are new: the previous document was empty.
   resolve the records referenced by that user UUID. Contact reads accept both the
   owner user UUID and contact UUID. These internal capabilities do not authorize
   callers or expose new HTTP endpoints.
+- **Mapping:** SQLx decodes user/contact rows into internal `UserData` and
+  `ContactData` structs. Repositories invoke checked construction and translate
+  its domain errors; duplicate row structs are unnecessary. Profiles and
+  preferences map directly because they have no checked-construction invariants.
 - **State:** General user/contact reads return enums containing validated
   typestate objects. Active-only reads retrieve rows by identity within scope,
   then check the decoded state. An existing wrong-state row is an error;
   absence alone permits an optional repository result.
 - **Errors:** Repositories translate technical failures into unavailable,
-  invalid-data, state-mismatch, or unexpected outcomes. Services require a
+  invalid-data, state-mismatch, or unexpected outcomes. Local read services require a
   result and translate absence to not-found. Technical sources remain diagnostic
   information and must not be serialized or logged with sensitive payloads.
-- **Construction:** Services receive repository contracts through constructors;
-  PostgreSQL adapters receive an existing pool. Async contracts use generic
-  dispatch and do not promise object safety. Read operations publish no events.
+- **Construction:** `users/app.rs` is a documented placeholder with no
+  external service traits, factories, or implementation exports. Existing read
+  services and their local contracts remain normal application code under
+  `services/`, loaded normally as `users::services`. Constructors accept repositories. Persistence contracts
+  remain in `repositories/traits.rs`, exported through `users::repositories`.
+  See [ADR-005](decisions/005-service-contract-entry-points.md).
 - **Events:** Payload parsing/serialization and event constructors now return
   errors rather than panicking. Topic strings and JSON field shapes are retained;
   no registration or verification handler chain is introduced.
-- **Rust compatibility:** Services now take repository dependencies rather than
-  pool references. Account reads replace unchecked `AnyUser` results with
-  `StoredUser`; contacts use `StoredContact`. Lifecycle objects no longer derive
-  SQLx row mapping, deserialization, or `Clone`. Event payload conversion and event
-  constructors are fallible. The publisher accepts `Arc<dyn EventManager>`.
-  Existing event JSON field shapes and the database schema remain unchanged.
+- **Rust compatibility:** `users::traits` has been removed. Store traits are
+  available from `users::repositories`; local read contracts and concrete service
+  implementations are available from `users::services` in normal
+  builds. The future external API remains reserved in `users::app`.
+  Repository reads still return validated `StoredUser` and `StoredContact`
+  variants. Existing event JSON field shapes and the database schema are unchanged.
 - **Deferred design:** Registration, lifecycle transitions, access policies,
   notification channels, and mutation transactions still depend on the existing
   open decisions. The read foundation does not complete their requirements.

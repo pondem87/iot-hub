@@ -77,6 +77,7 @@ not apply.
 - [ADR-002 — Domain events for cross-module effects](002-domain-events-for-cross-module-effects.md) — Accepted.
 - [ADR-003 — Usage limits owned by service](003-usage-limits-owned-by-service.md) — Proposed.
 - [ADR-004 — Typed user state machine](004-typed-user-state-machine.md) — Accepted.
+- [ADR-005 — Service contract entry points](005-service-contract-entry-points.md) — Accepted.
 
 ## 6 Relationship to other documentation
 
