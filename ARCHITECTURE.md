@@ -72,10 +72,18 @@ Keep state transitions and authorization decisions in the relevant domain or
 service. A repository's state check guarantees that the returned type matches the
 loaded data; it does not establish the caller's permission to perform an operation.
 
-### Users module structure and trait ownership
+<a id="users-module-structure-and-trait-ownership"></a>
 
-The current users module separates the reserved external API from existing local
-services and persistence. Its relevant files are:
+### Reference module structure and trait ownership
+
+The users module layout below is the intended reference structure for all domain
+modules. Apply the same separation of external service API, local services, and
+persistence, adapting implementation files and contract names to each domain's
+capabilities. Follow the style guide's file organization rules as modules grow.
+
+The users-specific names and current implementation details illustrate this shared
+structure; they do not prescribe other domains' capabilities or imply that every
+module already follows it. The relevant files in `users` are:
 
 ```text
 src/users/
