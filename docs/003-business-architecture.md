@@ -37,7 +37,8 @@ or open decisions; section 7 preserves original labels for all records.
 **CAP-1.1**
 
 - **Name:** User Definition
-- **Business ability or outcome:** Identify a user and create and retrieve their record.
+- **Business ability or outcome:** Identify a user by an international phone number,
+  create and retrieve their record, and reject duplicate accounts.
 - **Source:** [REQ-2.1.1](002-detailed-requirements.md#req-2.1.1)
 
 <a id="cap-1.2"></a>
@@ -53,7 +54,8 @@ or open decisions; section 7 preserves original labels for all records.
 **CAP-1.3**
 
 - **Name:** User Preference Management
-- **Business ability or outcome:** Obtain, maintain, and enforce a user’s expressed needs.
+- **Business ability or outcome:** Obtain, maintain, and enforce a user’s expressed needs,
+  with WhatsApp as the default communication channel.
 - **Source:** [REQ-2.3.1](002-detailed-requirements.md#req-2.3.1),
   [REQ-2.3.2](002-detailed-requirements.md#req-2.3.2)
 
@@ -72,7 +74,7 @@ or open decisions; section 7 preserves original labels for all records.
 
 - **Name:** User Account Management
 - **Business ability or outcome:** Activate, disable, and delete an account under the
-  applicable business rules.
+  applicable business rules, retaining deleted accounts for 30 days before cleanup.
 - **Source:** [REQ-2.4.1](002-detailed-requirements.md#req-2.4.1),
   [OPEN-003-2](003-business-architecture.md#open-003-2)
 
@@ -91,6 +93,9 @@ or open decisions; section 7 preserves original labels for all records.
 - **Name:** User/Subscription Matching
 - **Business ability or outcome:** Associate a user with the entitlement arrangement that
   applies to them.
+- **Entitlement:** Subscription sets the user's maximum superuser-account count,
+  defaulting to one organisation where they hold the superuser role, under
+  [REQ-1.1.4](002-detailed-requirements.md#req-1.1.4).
 - **Source:** [REQ-1.1.4](002-detailed-requirements.md#req-1.1.4),
   [OPEN-002-4](002-detailed-requirements.md#open-002-4)
 
@@ -109,6 +114,10 @@ or open decisions; section 7 preserves original labels for all records.
 
 - **Name:** User Contact Definition
 - **Business ability or outcome:** Identify, create, and retrieve a way to reach a user.
+- **Validation rules:** Phone numbers use international form such as `+26774178111`;
+  email addresses are lowercase, following
+  [REQ-2.1.1](002-detailed-requirements.md#req-2.1.1) and
+  [REQ-2.2.5](002-detailed-requirements.md#req-2.2.5).
 - **Source:** [REQ-2.2.5](002-detailed-requirements.md#req-2.2.5)
 
 <a id="cap-1.7.2"></a>
@@ -130,6 +139,30 @@ or open decisions; section 7 preserves original labels for all records.
 - **Source:** [REQ-2.2.2](002-detailed-requirements.md#req-2.2.2),
   [REQ-2.2.5](002-detailed-requirements.md#req-2.2.5)
 
+**CAP-1.8**
+
+- **Name:** User Access Management
+- **Business ability or outcome:** Determine who can access and manipulate user information
+- **Source:** [REQ-1.2](002-detailed-requirements.md#req-1.2)
+
+**CAP-1.8**
+
+- **Name:** User Access Constraint Definition
+- **Business ability or outcome:** Determine who can access and manipulate user information
+- **Source:** [REQ-1.2](002-detailed-requirements.md#req-1.2)
+
+**CAP-1.8.1**
+
+- **Name:** User Access Constraints Determination
+- **Business ability or outcome:** Determine who can access and manipulate user information
+- **Source:** [REQ-1.2](002-detailed-requirements.md#req-1.2)
+
+**CAP-1.8**
+
+- **Name:** User Access Contraints Enforcement
+- **Business ability or outcome:** Determine who can access and manipulate user information
+- **Source:** [REQ-1.2](002-detailed-requirements.md#req-1.2)
+
 ### 2.2 Organisation Management
 
 <a id="cap-2"></a>
@@ -147,7 +180,8 @@ or open decisions; section 7 preserves original labels for all records.
 **CAP-2.1**
 
 - **Name:** Organisation Definition
-- **Business ability or outcome:** Identify, create, and retrieve an organisation.
+- **Business ability or outcome:** Identify, create, rename, and retrieve an organisation,
+  enforcing name uniqueness while ignoring case and trimming and collapsing whitespace.
 - **Source:** [REQ-1.1.1](002-detailed-requirements.md#req-1.1.1)
 
 <a id="cap-2.2"></a>
@@ -155,8 +189,9 @@ or open decisions; section 7 preserves original labels for all records.
 **CAP-2.2**
 
 - **Name:** Organisation Superuser Management
-- **Business ability or outcome:** Set and retrieve the user with ownership responsibility
-  for an organisation.
+- **Business ability or outcome:** Set, retrieve, and transfer the organisation's sole
+  superuser role following verification by the current superuser; immediately remove
+  the former superuser's status on irreversible completion.
 - **Source:** [REQ-1.1.2](002-detailed-requirements.md#req-1.1.2),
   [REQ-1.1.3](002-detailed-requirements.md#req-1.1.3)
 
@@ -229,8 +264,8 @@ or open decisions; section 7 preserves original labels for all records.
 **CAP-2.5**
 
 - **Name:** Organisation Limit Management
-- **Business ability or outcome:** Determine and apply limits on organisation resources
-  and service continuity.
+- **Business ability or outcome:** Apply the subscription maximum for organisation
+  users and enforce service continuity when a user's subscription tier expires.
 - **Source:** [REQ-1.4.1](002-detailed-requirements.md#req-1.4.1),
   [REQ-1.4.2](002-detailed-requirements.md#req-1.4.2)
 
@@ -239,8 +274,8 @@ or open decisions; section 7 preserves original labels for all records.
 **CAP-2.5.1**
 
 - **Name:** Organisation Limit Definition
-- **Business ability or outcome:** Create, retrieve, and delete a limit applying to
-  organisation resources.
+- **Business ability or outcome:** Obtain and maintain the subscription-defined maximum
+  number of users for an organisation, defaulting to three including the superuser.
 - **Source:** [REQ-1.4.1](002-detailed-requirements.md#req-1.4.1)
 
 <a id="cap-2.5.2"></a>
@@ -248,7 +283,8 @@ or open decisions; section 7 preserves original labels for all records.
 **CAP-2.5.2**
 
 - **Name:** Organisation Limit Interpretation
-- **Business ability or outcome:** Interpret an organisation resource limit.
+- **Business ability or outcome:** Interpret the subscription-defined user maximum and
+  the organisation allowance applicable to a superuser after tier expiry.
 - **Source:** [REQ-1.4.1](002-detailed-requirements.md#req-1.4.1),
   [REQ-1.4.2](002-detailed-requirements.md#req-1.4.2)
 
@@ -257,8 +293,9 @@ or open decisions; section 7 preserves original labels for all records.
 **CAP-2.5.3**
 
 - **Name:** Organisation Limit Enforcement
-- **Business ability or outcome:** Apply a resource or continuity limit to organisation
-  use.
+- **Business ability or outcome:** Enforce the subscription maximum on membership
+  additions; on a superuser's tier expiry, randomly disable excess organisations
+  until one remains enabled under the default allowance, preserving data.
 - **Source:** [REQ-1.4.1](002-detailed-requirements.md#req-1.4.1),
   [REQ-1.4.2](002-detailed-requirements.md#req-1.4.2)
 
@@ -290,6 +327,18 @@ or open decisions; section 7 preserves original labels for all records.
 - **Source:** [REQ-1.2.1](002-detailed-requirements.md#req-1.2.1),
   [OPEN-002-4](002-detailed-requirements.md#open-002-4)
 
+<a id="cap-2.7"></a>
+
+**CAP-2.7**
+
+- **Name:** Organisation Lifecycle Management
+- **Business ability or outcome:** Disable all organisation activity until superuser
+  reactivation while retaining data indefinitely; permit only reactivation while
+  deleted, before cleanup after 30 days of the organisation and all its owned assets.
+  User accounts survive organisation cleanup because organisations do not own users.
+- **Source:** [REQ-1.5.1](002-detailed-requirements.md#req-1.5.1),
+  [REQ-1.5.2](002-detailed-requirements.md#req-1.5.2)
+
 ### 2.3 Verification Code Management
 
 <a id="cap-3"></a>
@@ -309,8 +358,14 @@ or open decisions; section 7 preserves original labels for all records.
 
 - **Name:** Verification Code Definition
 - **Business ability or outcome:** Generate, store, and retrieve a code used to verify a
-  request.
-- **Source:** [REQ-3.1.1](002-detailed-requirements.md#req-3.1.1)
+  request, paired with a purpose supplied by the requesting service; replace the
+  prior code for that verification and purpose on resend, subject to
+  [CAP-3.5](003-business-architecture.md#cap-3.5).
+- **Replacement guarantee:** A successful resend makes the previous code unusable
+  and starts a fresh five-minute lifetime. If generation is blocked, no replacement
+  is created. A failed replacement must not report success.
+- **Source:** [REQ-2.2.4](002-detailed-requirements.md#req-2.2.4),
+  [REQ-3.1.2](002-detailed-requirements.md#req-3.1.2), [REQ-3.1.1](002-detailed-requirements.md#req-3.1.1)
 
 <a id="cap-3.2"></a>
 
@@ -318,7 +373,9 @@ or open decisions; section 7 preserves original labels for all records.
 
 - **Name:** Verification Code Validation
 - **Business ability or outcome:** Determine whether a submitted code matches and remains
-  within its validity period.
+  within its five-minute lifetime, has not been invalidated, and has not already
+  been consumed; require the matching service-supplied purpose and accept each code
+  only once.
 - **Source:** [REQ-3.2.1](002-detailed-requirements.md#req-3.2.1)
 
 <a id="cap-3.3"></a>
@@ -327,7 +384,8 @@ or open decisions; section 7 preserves original labels for all records.
 
 - **Name:** Verification Code Cleanup
 - **Business ability or outcome:** Clear proofs that have been used or are no longer
-  valid.
+  valid, and discard every code within 24 hours of generation while preserving
+  still-required block history.
 - **Source:** [REQ-3.3.1](002-detailed-requirements.md#req-3.3.1)
 
 <a id="cap-3.4"></a>
@@ -336,7 +394,7 @@ or open decisions; section 7 preserves original labels for all records.
 
 - **Name:** Verification Code Matching
 - **Business ability or outcome:** Associate a verification code with the business object
-  to which it applies.
+  to which it applies and the purpose supplied by the requesting service.
 - **Source:** [REQ-3.1.1](002-detailed-requirements.md#req-3.1.1)
 
 <a id="cap-3.4.1"></a>
@@ -355,6 +413,21 @@ or open decisions; section 7 preserves original labels for all records.
 - **Business ability or outcome:** Associate a verification code with its contact method.
 - **Source:** [REQ-2.2.2](002-detailed-requirements.md#req-2.2.2),
   [REQ-2.2.5](002-detailed-requirements.md#req-2.2.5)
+
+<a id="cap-3.5"></a>
+
+**CAP-3.5**
+
+- **Name:** Verification Code Generation Control
+- **Business ability or outcome:** Count generation and resends per service-supplied
+  purpose, enforce timed blocks, and preserve block history independently of codes.
+- **Rules:** The fifth code generated within ten minutes triggers a one-hour block;
+  a second block for the same purpose within 24 hours of the first block's start
+  lasts 24 hours. Blocked requests generate no codes and do not count as generation.
+  Other purposes are unaffected. Window details and subsequent-block policy remain
+  [OPEN-002-3](002-detailed-requirements.md#open-002-3).
+- **Source:** [REQ-3.1.2](002-detailed-requirements.md#req-3.1.2),
+  [REQ-3.3.1](002-detailed-requirements.md#req-3.3.1)
 
 ### 2.4 Organisation Invitation Management
 
@@ -724,7 +797,11 @@ or open decisions; section 7 preserves original labels for all records.
 
 - **Name:** Submission Validation
 - **Business ability or outcome:** Check submission structure and phone, name, and
-  password values against the applicable rules.
+  password values against the applicable rules, including international phone form,
+  lowercase email, and passwords of at least eight characters containing lowercase,
+  uppercase, and digits.
+- **Resolved rules:** [REQ-2.2.1](002-detailed-requirements.md#req-2.2.1),
+  [REQ-2.2.5](002-detailed-requirements.md#req-2.2.5).
 - **Source:** [REQ-2.1.1](002-detailed-requirements.md#req-2.1.1),
   [OPEN-002-2](002-detailed-requirements.md#open-002-2)
 
@@ -747,6 +824,17 @@ dependencies, not a decided database deletion policy.
 - **Category and parent:** Primary
 - **Types:** superuser, staff, customer
 - **States:** unverified, active, inactive, barred, deleted
+- **Identity and retention:** Phone identity uses international form such as
+  `+26774178111`; duplicate accounts fail registration. Deleted accounts are retained
+  for 30 days before cleanup, under [REQ-2.1.1](002-detailed-requirements.md#req-2.1.1)
+  and [REQ-2.4.1](002-detailed-requirements.md#req-2.4.1).
+- **Organisation roles and limits:** Users exist independently of organisations and
+  survive organisation cleanup. Subscription limits the number of organisations in
+  which a user holds the superuser role; verified transfer removes that role from
+  the former superuser immediately. See
+  [REQ-1.1.3](002-detailed-requirements.md#req-1.1.3),
+  [REQ-1.1.4](002-detailed-requirements.md#req-1.1.4), and
+  [REQ-1.5.2](002-detailed-requirements.md#req-1.5.2).
 - **Source:** [CAP-1.1](003-business-architecture.md#cap-1.1),
   [CAP-1.4](003-business-architecture.md#cap-1.4)
 
@@ -768,6 +856,9 @@ dependencies, not a decided database deletion policy.
 - **Category and parent:** Secondary; [INFO-1](003-business-architecture.md#info-1)
 - **Types:** None recorded
 - **States:** None recorded
+- **Default:** WhatsApp is the default communication channel under
+  [REQ-2.3.2](002-detailed-requirements.md#req-2.3.2); channel choice and notification
+  opt-in are distinct preferences.
 - **Source:** [CAP-1.3](003-business-architecture.md#cap-1.3)
 
 <a id="info-1.3"></a>
@@ -779,7 +870,21 @@ dependencies, not a decided database deletion policy.
 - **Category and parent:** Secondary; [INFO-1](003-business-architecture.md#info-1)
 - **Types:** phone number, email address
 - **States:** unverified, active, disabled
+- **Representation:** International phone form, for example `+26774178111`, or a
+  lowercase email address; see [REQ-2.1.1](002-detailed-requirements.md#req-2.1.1)
+  and [REQ-2.2.5](002-detailed-requirements.md#req-2.2.5).
 - **Source:** [CAP-1.7](003-business-architecture.md#cap-1.7)
+
+<a id="info-1.4"></a>
+
+**INFO-1.4**
+
+- **Concept and definition:** User access constraints — parameters restricting access to a user's data
+- **Category and parent:** Secondary; [INFO-1](003-business-architecture.md#info-1)
+- **Types:** 
+- **States:** 
+- **Source:** [CAP-1.8](003-business-architecture.md#cap-1.8)
+
 
 <a id="info-2"></a>
 
@@ -790,6 +895,26 @@ dependencies, not a decided database deletion policy.
 - **Category and parent:** Primary
 - **Types:** None recorded
 - **States:** active, inactive, barred, deleted
+- **Lifecycle and retention:** Disabled organisations halt all activity until
+  superuser reactivation and keep data indefinitely. Deleted organisations retain
+  data for 30 days before cleanup; reactivation is possible only before that
+  deadline and cancels cleanup. These rules derive from
+  [CAP-2.7](003-business-architecture.md#cap-2.7). Mapping the disabled condition to
+  the existing inactive/barred vocabulary remains in
+  [OPEN-003-2](003-business-architecture.md#open-003-2).
+- **Name identity:** Ignore case, trim surrounding whitespace, and collapse internal
+  whitespace when checking uniqueness under
+  [REQ-1.1.1](002-detailed-requirements.md#req-1.1.1).
+- **Superuser:** Exactly one user holds the role for this organisation. Transfer
+  requires the current superuser's verification, is irreversible, and immediately
+  replaces their superuser status with the recipient's, under
+  [REQ-1.1.3](002-detailed-requirements.md#req-1.1.3).
+- **Ownership and cleanup:** Owns its assets, not its users. Deletion cleanup includes
+  all owned assets and preserves user accounts. While deleted, only reactivation is
+  allowed before the cleanup deadline, under
+  [REQ-1.5.2](002-detailed-requirements.md#req-1.5.2).
+- **Subscription expiry:** Randomly selected excess organisations become disabled,
+  preserving their data, under [REQ-1.4.2](002-detailed-requirements.md#req-1.4.2).
 - **Source:** [CAP-2](003-business-architecture.md#cap-2)
 
 <a id="info-2.1"></a>
@@ -807,11 +932,15 @@ dependencies, not a decided database deletion policy.
 
 **INFO-2.2**
 
-- **Concept and definition:** Organisation Limit — a policy determining limits on
-  organisation resources.
+- **Concept and definition:** Organisation Limit — the maximum number of users allowed
+  in an organisation by its applicable subscription.
 - **Category and parent:** Secondary; [INFO-2](003-business-architecture.md#info-2)
 - **Types:** None recorded
 - **States:** None recorded
+- **Scope:** Default maximum is three users total, including the superuser. Distinct
+  from the user's default limit of one organisation where they are superuser. See
+  [REQ-1.4.1](002-detailed-requirements.md#req-1.4.1) and
+  [REQ-1.1.4](002-detailed-requirements.md#req-1.1.4).
 - **Source:** [CAP-2.5](003-business-architecture.md#cap-2.5)
 
 <a id="info-2.3"></a>
@@ -831,9 +960,34 @@ dependencies, not a decided database deletion policy.
 
 - **Concept and definition:** Verification Code — a code used to verify authenticity of a
   request or contact verification.
-- **Category and parent:** Primary in source; ownership needs confirmation
-- **Types:** otp
-- **States:** ready, used, expired
+- **Category and parent:** Primary verification-domain record with its own identity
+  and retention; associated with a subject rather than owned by an organisation.
+  This is the proposed model in
+  [ADR-006](decisions/006-verification-code-lifecycle-and-controls.md).
+- **Types:** otp; the existing requirement specifies five numeric digits.
+- **States:** ready, used, expired, invalidated. `invalidated` represents resend
+  replacement; it is derived from [REQ-2.2.4](002-detailed-requirements.md#req-2.2.4).
+- **Lifecycle:** Generation creates a ready code. Successful validation consumes it
+  as used. A ready code becomes expired at its five-minute deadline or invalidated
+  by successful resend. Used, expired, and invalidated codes cannot become ready
+  again. Cleanup removes records; removed is not a usable lifecycle state.
+- **Purpose:** Each code is paired with the purpose supplied by its requesting
+  service. Purpose is a required attribute, distinct from the `otp` type and
+  lifecycle state; validation must match it. The purpose vocabulary remains in
+  [OPEN-002-3](002-detailed-requirements.md#open-002-3).
+- **Validity and retention:** Codes last five minutes, succeed once, and are
+  invalidated by resend; all codes are discarded within 24 hours of generation.
+  Expiry takes effect at the deadline even if no background task has yet changed a
+  stored state. Generation blocks restrict generation, not an otherwise valid code's
+  use; no separate validation block has been specified.
+- **Generation control:** Independently for each purpose, track five generations
+  within ten minutes, a one-hour first block, and a 24-hour second block triggered
+  within 24 hours of the first block's start. Other purposes are unaffected.
+  Block history belongs to [INFO-5](003-business-architecture.md#info-5) and survives
+  code cleanup while still needed. These rules follow [REQ-3.1.2](002-detailed-requirements.md#req-3.1.2),
+  [REQ-3.2.1](002-detailed-requirements.md#req-3.2.1),
+  [REQ-2.2.4](002-detailed-requirements.md#req-2.2.4), and
+  [REQ-3.3.1](002-detailed-requirements.md#req-3.3.1).
 - **Source:** [CAP-3](003-business-architecture.md#cap-3)
 
 <a id="info-4"></a>
@@ -848,6 +1002,27 @@ dependencies, not a decided database deletion policy.
 - **States:** active, used, revoked
 - **Source:** [CAP-4](003-business-architecture.md#cap-4),
   [OPEN-003-1](003-business-architecture.md#open-003-1)
+
+<a id="info-5"></a>
+
+**INFO-5**
+
+- **Concept and definition:** Verification Code Generation Control — generation history
+  and temporary restriction for one service-supplied purpose.
+- **Category and parent:** Primary control record, independent of any individual
+  code's existence; proposed separation in
+  [ADR-006](decisions/006-verification-code-lifecycle-and-controls.md).
+- **Types:** None required; one-hour and 24-hour blocks are durations, not code types.
+- **States:** allowed, blocked; blocked until its deadline, then allowed to generate
+  again. Prior block history remains while needed for escalation.
+- **Scope:** The supplied purpose identifies the control. The subject identifies
+  which verification a code serves; it does not add another throttle dimension.
+- **Retention:** Do not retain code secrets here. Keep only the generation and block
+  metadata needed for counting, escalation, and the active block. Removing a code
+  must not delete or reset its purpose's control.
+- **Source:** [CAP-3.5](003-business-architecture.md#cap-3.5),
+  [REQ-3.1.2](002-detailed-requirements.md#req-3.1.2),
+  [REQ-3.3.1](002-detailed-requirements.md#req-3.3.1)
 
 ### 3.2 Business relationships
 
@@ -911,8 +1086,9 @@ capabilities; cardinalities require scenario validation in 004.
 **Controlling concept: [INFO-2](003-business-architecture.md#info-2)**
 
 - **Related concept:** [INFO-1](003-business-architecture.md#info-1)
-- **Business relationship:** Establishes organisation membership; superuser association
-  must also satisfy the one-superuser rule.
+- **Business relationship:** Associates independent users through membership; users
+  are not owned by the organisation. Exactly one is superuser, with verified,
+  irreversible transfer managed by [CAP-2.2](003-business-architecture.md#cap-2.2).
 - **Establishing capability:** [CAP-2.6.1](003-business-architecture.md#cap-2.6.1)
 
 **Controlling concept: [INFO-2](003-business-architecture.md#info-2)**
@@ -944,6 +1120,14 @@ capabilities; cardinalities require scenario validation in 004.
 - **Related concept:** [INFO-1](003-business-architecture.md#info-1)
 - **Business relationship:** Associates an invitation with its intended user.
 - **Establishing capability:** [CAP-4.4.2](003-business-architecture.md#cap-4.4.2)
+
+**Controlling concept: [INFO-5](003-business-architecture.md#info-5)**
+
+- **Related concept:** [INFO-3](003-business-architecture.md#info-3)
+- **Business relationship:** Controls zero or more code generations sharing one purpose.
+  Every code contributes to the history for exactly that purpose. Codes may be cleaned
+  up while the control remains; this is an association, not lifecycle ownership.
+- **Establishing capability:** [CAP-3.5](003-business-architecture.md#cap-3.5)
 
 ## 4 Value streams
 
@@ -978,7 +1162,9 @@ new mandatory fields or equate contact verification with account activation.
 
 - **Entry:** Submitted details are available.
 - **Exit:** Details satisfy the applicable schema and validation rules;
-  [OPEN-002-2](002-detailed-requirements.md#open-002-2) defines them.
+  [REQ-2.1.1](002-detailed-requirements.md#req-2.1.1) defines phone form and
+  [REQ-2.2.1](002-detailed-requirements.md#req-2.2.1) defines password rules.
+  Remaining submission rules are [OPEN-002-2](002-detailed-requirements.md#open-002-2).
 - **Value item:** The request is fit for account creation.
 - **Participants:** Customer; service
 - **Enabling capabilities:** [CAP-11.4](003-business-architecture.md#cap-11.4)
@@ -988,7 +1174,7 @@ new mandatory fields or equate contact verification with account activation.
 **STAGE-1.3 — Create User Account**
 
 - **Entry:** Accepted details are available.
-- **Exit:** A user record exists; initial lifecycle state requires
+- **Exit:** A new, nonduplicate user record exists; initial lifecycle state requires
   [OPEN-003-2](003-business-architecture.md#open-003-2).
 - **Value item:** The customer is represented by an account.
 - **Participants:** Customer; service
@@ -1002,11 +1188,12 @@ new mandatory fields or equate contact verification with account activation.
 **STAGE-1.4 — Initialise Verification**
 
 - **Entry:** The account and phone details exist.
-- **Exit:** A verification code is generated and the verification workflow initiated;
+- **Exit:** A code is generated within the generation limits and verification is initiated;
   delivery responsibility is [OPEN-003-3](003-business-architecture.md#open-003-3).
 - **Value item:** The customer has a path to proving phone ownership.
 - **Participants:** Customer; service; messaging participant
 - **Enabling capabilities:** [CAP-3.1](003-business-architecture.md#cap-3.1),
+  [CAP-3.5](003-business-architecture.md#cap-3.5),
   [CAP-5.1](003-business-architecture.md#cap-5.1),
   [CAP-5.2](003-business-architecture.md#cap-5.2),
   [CAP-5.3](003-business-architecture.md#cap-5.3)
@@ -1106,7 +1293,9 @@ removing it. These are derived responsibility mappings, not database permissions
 **Concept: [INFO-1](003-business-architecture.md#info-1)**
 
 - **Capabilities that use it:** [CAP-3.4.1](003-business-architecture.md#cap-3.4.1),
-  [CAP-2.6.1](003-business-architecture.md#cap-2.6.1)
+  [CAP-2.6.1](003-business-architecture.md#cap-2.6.1),
+  [CAP-2.2](003-business-architecture.md#cap-2.2),
+  [CAP-2.5.3](003-business-architecture.md#cap-2.5.3)
 - **Capabilities that modify it:** [CAP-1.1](003-business-architecture.md#cap-1.1),
   [CAP-1.4](003-business-architecture.md#cap-1.4),
   [CAP-1.5](003-business-architecture.md#cap-1.5)
@@ -1145,7 +1334,9 @@ removing it. These are derived responsibility mappings, not database permissions
 - **Capabilities that use it:** [CAP-4.4.1](003-business-architecture.md#cap-4.4.1)
 - **Capabilities that modify it:** [CAP-2.1](003-business-architecture.md#cap-2.1),
   [CAP-2.2](003-business-architecture.md#cap-2.2),
-  [CAP-2.3](003-business-architecture.md#cap-2.3)
+  [CAP-2.3](003-business-architecture.md#cap-2.3),
+  [CAP-2.5.3](003-business-architecture.md#cap-2.5.3),
+  [CAP-2.7](003-business-architecture.md#cap-2.7)
 - **Data/application references:** [DATA-5](004-data-architecture.md#data-5),
   [APP-8](005-application-architecture.md#app-8)
 
@@ -1174,7 +1365,8 @@ removing it. These are derived responsibility mappings, not database permissions
 **Concept: [INFO-3](003-business-architecture.md#info-3)**
 
 - **Capabilities that use it:** [CAP-3.2](003-business-architecture.md#cap-3.2)
-- **Capabilities that modify it:** [CAP-3.1](003-business-architecture.md#cap-3.1),
+- **Capabilities that modify it:** [CAP-3.2](003-business-architecture.md#cap-3.2),
+  [CAP-3.1](003-business-architecture.md#cap-3.1),
   [CAP-3.3](003-business-architecture.md#cap-3.3),
   [CAP-3.4](003-business-architecture.md#cap-3.4)
 - **Data/application references:** [DATA-9](004-data-architecture.md#data-9),
@@ -1189,6 +1381,14 @@ removing it. These are derived responsibility mappings, not database permissions
   [CAP-4.4](003-business-architecture.md#cap-4.4)
 - **Data/application references:** [DATA-10](004-data-architecture.md#data-10),
   [APP-8](005-application-architecture.md#app-8)
+
+**Concept: [INFO-5](003-business-architecture.md#info-5)**
+
+- **Capabilities that use it:** [CAP-3.1](003-business-architecture.md#cap-3.1),
+  [CAP-3.5](003-business-architecture.md#cap-3.5)
+- **Capabilities that modify it:** [CAP-3.5](003-business-architecture.md#cap-3.5)
+- **Data/application references:** [DATA-11](004-data-architecture.md#data-11),
+  [APP-3](005-application-architecture.md#app-3)
 
 The registration trace joins [REQ-2.1.1](002-detailed-requirements.md#req-2.1.1),
 [REQ-2.1.2](002-detailed-requirements.md#req-2.1.2) →
@@ -1219,11 +1419,18 @@ implemented end-to-end feature.
 
 **OPEN-003-2**
 
-- **Question and impact:** Define state meanings, transitions, prerequisites, and effects
-  for users, contacts, organisations, codes, and invitations. Confirm role/type semantics
-  and whether account activation follows contact verification. Reconcile primary
-  Verification Code classification with its associations. These decisions constrain data
-  and typestate APIs.
+- **Question and impact:** Complete state meanings, transitions, prerequisites, and
+  effects for users, contacts, organisations, codes, and invitations around the
+  resolved retention, disable, reactivation, code expiry/use, and resend rules in
+  [OPEN-002-1](002-detailed-requirements.md#open-002-1),
+  [OPEN-002-2](002-detailed-requirements.md#open-002-2), and
+  [OPEN-002-3](002-detailed-requirements.md#open-002-3). Map the disabled organisation
+  condition to the recorded state vocabulary. Code lifecycle, subject associations,
+  and separate generation control are refined in
+  [INFO-3](003-business-architecture.md#info-3), [INFO-5](003-business-architecture.md#info-5),
+  and proposed [ADR-006](decisions/006-verification-code-lifecycle-and-controls.md).
+  Confirm remaining role/type semantics and whether account activation follows
+  contact verification. These decisions constrain data and typestate APIs.
 
 <a id="open-003-3"></a>
 

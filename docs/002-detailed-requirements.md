@@ -6,6 +6,9 @@ These records preserve the obligations in the original detailed requirements and
 elaborate goals already stated in 001. Acceptance statements describe observable
 checks without selecting unspecified policies. Source labels identify the original
 document and section; they are historical references, not current heading numbers.
+The resolved portions of [OPEN-002-1](#open-002-1), [OPEN-002-2](#open-002-2), and
+[OPEN-002-3](#open-002-3) record the subsequent user decisions reflected in the
+requirements and acceptance criteria below.
 
 ### 1.1 Organisation management
 
@@ -18,9 +21,12 @@ Permission details beyond the source remain open.
 **REQ-1.1.1**
 
 - **Required outcome and constraints:** Create an organisation with a unique name.
-- **Acceptance criterion:** A creation request with a conflicting name is rejected; a
-  distinct name can be used. Name equivalence rules are
-  [OPEN-002-1](002-detailed-requirements.md#open-002-1).
+  Compare names ignoring case, trimming leading/trailing whitespace, and collapsing
+  consecutive internal whitespace to a single space. Apply the same comparison on
+  creation and rename.
+- **Acceptance criterion:** `Acme Ltd`, `ACME LTD`, and ` Acme  Ltd ` conflict.
+  A creation or rename that conflicts with another organisation is rejected,
+  including concurrent conflicting requests. Distinct comparison values are allowed.
 - **Source:** 002 / Organisation / 1.1 create; 1.1.2 unique name
 
 <a id="req-1.1.2"></a>
@@ -36,20 +42,30 @@ Permission details beyond the source remain open.
 
 **REQ-1.1.3**
 
-- **Required outcome and constraints:** An organisation must have one superuser.
-- **Acceptance criterion:** An organisation has exactly one superuser; transfer and
-  exceptional cases require [OPEN-002-1](002-detailed-requirements.md#open-002-1).
+- **Required outcome and constraints:** An organisation must have exactly one superuser.
+  Transfer to another user is allowed only following verification of the transfer
+  by the current superuser. A completed transfer is irreversible: the previous
+  superuser immediately loses that status and the recipient becomes the superuser.
+- **Acceptance criterion:** Before successful verification, the current superuser
+  retains the role. Failed verification leaves ownership unchanged. On successful
+  transfer, the recipient is the sole superuser, the previous user's superuser
+  permissions cease immediately, and the previous user cannot undo the transfer.
+  Verification method and recipient eligibility remain in
+  [OPEN-002-1](002-detailed-requirements.md#open-002-1).
 - **Source:** 002 / Organisation / 1.1.4
 
 <a id="req-1.1.4"></a>
 
 **REQ-1.1.4**
 
-- **Required outcome and constraints:** Check the user’s permission and usage tier before
-  allowing multiple organisations.
-- **Acceptance criterion:** A request to create another organisation is evaluated against
-  the applicable entitlement; tier limits require
-  [OPEN-002-1](002-detailed-requirements.md#open-002-1).
+- **Required outcome and constraints:** Check the user's permission and subscription
+  limit before allowing another organisation. The user limit is the number of
+  organisations in which the user holds a superuser account/role. The default
+  allowance is one organisation per superuser.
+- **Acceptance criterion:** Creation succeeds only within the subscription's allowed
+  superuser-account count. A request that would exceed the applicable limit fails.
+  Non-default tier values and lifecycle counting cases remain in
+  [OPEN-002-4](002-detailed-requirements.md#open-002-4).
 - **Source:** 002 / Organisation / 1.1.5; 001 / Organisations
 
 <a id="req-1.2.1"></a>
@@ -57,19 +73,23 @@ Permission details beyond the source remain open.
 **REQ-1.2.1**
 
 - **Required outcome and constraints:** Allow additional organisation users up to the
-  subscription-tier maximum.
-- **Acceptance criterion:** Adding a member respects the applicable maximum; tier values
-  require [OPEN-002-1](002-detailed-requirements.md#open-002-1).
+  maximum number of users set by the applicable subscription. The default is three
+  users total per organisation, including its superuser.
+- **Acceptance criterion:** Adding a user within the applicable subscription maximum
+  is permitted; an addition exceeding it fails. Under the default, a superuser and
+  two other members fill the allowance; a fourth user is rejected. Non-default tier
+  values and remaining counting details remain in [OPEN-002-4](002-detailed-requirements.md#open-002-4).
 - **Source:** 002 / Organisation / 1.2.1
 
 <a id="req-1.2.2"></a>
 
 **REQ-1.2.2**
 
-- **Required outcome and constraints:** Allow the superuser to rename the organisation to
-  another unique name.
-- **Acceptance criterion:** An authorized rename succeeds only if the new name meets
-  uniqueness rules.
+- **Required outcome and constraints:** Allow the superuser to rename the organisation
+  to another unique name, using the case-insensitive, trimmed, collapsed-whitespace
+  comparison in [REQ-1.1.1](002-detailed-requirements.md#req-1.1.1).
+- **Acceptance criterion:** An authorized rename succeeds only if its comparison
+  value does not conflict with another organisation's name.
 - **Source:** 002 / Organisation / 1.2.2
 
 <a id="req-1.2.3"></a>
@@ -107,30 +127,43 @@ Permission details beyond the source remain open.
 
 **REQ-1.4.1**
 
-- **Required outcome and constraints:** Determine and enforce maximum organisation users.
-- **Acceptance criterion:** Membership changes enforce the maximum determined for that
-  organisation.
+- **Required outcome and constraints:** The organisation limit is its number of users,
+  with the maximum supplied by subscription; the default is three users total, including
+  the superuser.
+  Enforce that maximum on membership
+  additions.
+- **Acceptance criterion:** Membership additions cannot exceed the subscription's
+  maximum, including concurrent additions. Behaviour for an existing membership
+  exceeding a reduced maximum remains in
+  [OPEN-002-4](002-detailed-requirements.md#open-002-4).
 - **Source:** 002 / Organisation / 1.4.1
 
 <a id="req-1.4.2"></a>
 
 **REQ-1.4.2**
 
-- **Required outcome and constraints:** Determine and apply organisation service
-  continuity limits.
-- **Acceptance criterion:** The continuity decision and its effects require
-  [OPEN-002-1](002-detailed-requirements.md#open-002-1) before acceptance can be
-  completed.
+- **Required outcome and constraints:** When a user's subscription tier expires,
+  randomly select and disable excess organisations for which that user is superuser
+  until the number remaining enabled meets the default allowance of one organisation
+  per superuser. Disable rather than delete them; retain their data indefinitely under
+  [REQ-1.5.1](002-detailed-requirements.md#req-1.5.1).
+- **Acceptance criterion:** Given five enabled organisations when the tier expires,
+  four distinct organisations are selected randomly and disabled, leaving one enabled. At or below the allowance, none need disabling. Existing
+  users, superuser assignments, and organisation data are preserved. Reactivation
+  conditions remain in
+  [OPEN-002-4](002-detailed-requirements.md#open-002-4).
 - **Source:** 002 / Organisation / 1.4.2
 
 <a id="req-1.5.1"></a>
 
 **REQ-1.5.1**
 
-- **Required outcome and constraints:** Allow the superuser to enable or disable the
-  organisation.
-- **Acceptance criterion:** An authorized request changes availability; state and access
-  effects require [OPEN-002-1](002-detailed-requirements.md#open-002-1).
+- **Required outcome and constraints:** Allow the organisation superuser to enable or
+  disable the organisation. Disabling halts all organisation activity until the
+  superuser reactivates it; its data is retained indefinitely while disabled.
+- **Acceptance criterion:** After disabling, organisation activity cannot proceed.
+  Superuser reactivation restores availability; another user cannot reactivate it.
+  Disabled data remains retained beyond 30 days without deletion cleanup.
 - **Source:** 002 / Organisation / 1.5.1
 
 <a id="req-1.5.2"></a>
@@ -138,8 +171,19 @@ Permission details beyond the source remain open.
 **REQ-1.5.2**
 
 - **Required outcome and constraints:** Allow the superuser to delete the organisation.
-- **Acceptance criterion:** An authorized deletion request follows a defined deletion and
-  retention policy; policy requires [OPEN-002-1](002-detailed-requirements.md#open-002-1).
+  In the deleted state, it is completely disabled: reactivation is the only allowed
+  organisation activity before the 30-day deadline. Retain it for 30 days after
+  deletion, then clean up the organisation and all assets it owns. Users are not
+  owned by organisations and must not be deleted by this cleanup. Reactivation
+  before the deadline cancels pending cleanup.
+- **Acceptance criterion:** While deleted, organisation operations other than
+  reactivation fail, including asset operations and superuser transfer. Reactivation
+  before deletion time plus 30 days cancels cleanup; at or after that deadline it
+  fails and cleanup removes the organisation and all its owned assets, preserving
+  user accounts and assets owned by other organisations. Scheduled cleanup is the
+  required retention action, not an available user activity. Deleted-organisation
+  reactivation authorization remains in
+  [OPEN-002-1](002-detailed-requirements.md#open-002-1).
 - **Source:** 002 / Organisation / 1.5.2
 
 ### 1.2 User management
@@ -152,9 +196,14 @@ profile, or preferences. Authentication and reset preconditions require
 
 **REQ-2.1.1**
 
-- **Required outcome and constraints:** Allow registration using a phone number.
-- **Acceptance criterion:** A registration request can create an account identified by a
-  phone number; normalization and duplicate handling require
+- **Required outcome and constraints:** Allow registration using a phone number in
+  international form: a leading `+`, country code, and subscriber digits, without
+  spaces or punctuation; for example, `+26774178111` (Botswana). Duplicate accounts
+  are not allowed; registration with an existing account phone number must fail.
+- **Acceptance criterion:** An unused phone number in the required form can identify
+  a new account. A number without `+` or containing spaces or separators is rejected.
+  A duplicate registration fails without creating another account, including when
+  requests race. Additional duplicate-identity rules remain in
   [OPEN-002-2](002-detailed-requirements.md#open-002-2).
 - **Source:** 002 / User / 2.1.1
 
@@ -165,17 +214,23 @@ profile, or preferences. Authentication and reset preconditions require
 - **Required outcome and constraints:** Verify the phone number using a code sent through
   WhatsApp.
 - **Acceptance criterion:** The workflow sends a verification code through WhatsApp and
-  checks the submitted code; timing and retry rules require
-  [OPEN-002-3](002-detailed-requirements.md#open-002-3).
+  checks it using the lifetime and single-use rules in
+  [REQ-3.2.1](002-detailed-requirements.md#req-3.2.1) and generation limits in
+  [REQ-3.1.2](002-detailed-requirements.md#req-3.1.2).
 - **Source:** 002 / User / 2.1.2
 
 <a id="req-2.2.1"></a>
 
 **REQ-2.2.1**
 
-- **Required outcome and constraints:** Allow a user to change their password.
-- **Acceptance criterion:** A permitted change replaces the credential; credential and
-  authorization policy require [OPEN-002-2](002-detailed-requirements.md#open-002-2).
+- **Required outcome and constraints:** Allow a user to change their password. Every
+  password set during registration, change, or reset must have at least eight
+  characters, including at least one lowercase letter, one uppercase letter, and
+  one digit.
+- **Acceptance criterion:** An eight-character password containing all three required
+  classes satisfies this rule. A shorter password or one missing any required class
+  is rejected without replacing the credential. Authorization remains in
+  [OPEN-002-2](002-detailed-requirements.md#open-002-2).
 - **Source:** 002 / User / 2.2.1
 
 <a id="req-2.2.2"></a>
@@ -191,10 +246,12 @@ profile, or preferences. Authentication and reset preconditions require
 
 **REQ-2.2.3**
 
-- **Required outcome and constraints:** Allow a user to reset their password.
-- **Acceptance criterion:** The reset flow establishes the required proof and changes the
-  password; proof and expiry rules remain
-  [OPEN-002-2](002-detailed-requirements.md#open-002-2).
+- **Required outcome and constraints:** Allow a user to reset their password, enforcing
+  [REQ-2.2.1](002-detailed-requirements.md#req-2.2.1) for the replacement password.
+- **Acceptance criterion:** The reset flow establishes the required proof and changes
+  the password only if it meets the password rule. Reset verification codes follow
+  [REQ-3.2.1](002-detailed-requirements.md#req-3.2.1). Reset authorization and proof
+  scope remain in [OPEN-002-2](002-detailed-requirements.md#open-002-2).
 - **Source:** 002 / User / 2.2.3
 
 <a id="req-2.2.4"></a>
@@ -202,8 +259,13 @@ profile, or preferences. Authentication and reset preconditions require
 **REQ-2.2.4**
 
 - **Required outcome and constraints:** Allow a user to request a new verification code.
-- **Acceptance criterion:** A new-code request is supported; throttling and treatment of
-  earlier codes require [OPEN-002-3](002-detailed-requirements.md#open-002-3).
+  A successful resend creates a new code and invalidates the previous code for the
+  same verification and service-supplied purpose. Codes for other purposes are
+  unaffected. Resends count toward
+  [REQ-3.1.2](002-detailed-requirements.md#req-3.1.2).
+- **Acceptance criterion:** After a successful resend, the old code fails validation
+  and the new code has its own five-minute lifetime. A blocked resend generates
+  no new code.
 - **Source:** 002 / User / 2.2.4
 
 <a id="req-2.2.5"></a>
@@ -211,8 +273,11 @@ profile, or preferences. Authentication and reset preconditions require
 **REQ-2.2.5**
 
 - **Required outcome and constraints:** Allow a user to set and verify an email address.
-- **Acceptance criterion:** The user can set an email and establish its verification
-  status; proof mechanism requires [OPEN-002-2](002-detailed-requirements.md#open-002-2).
+  Email addresses must be represented in lowercase.
+- **Acceptance criterion:** A saved email address contains no uppercase letters and
+  the user can establish its verification status. Whether mixed-case input is
+  converted or rejected, and the proof mechanism, remain in
+  [OPEN-002-2](002-detailed-requirements.md#open-002-2).
 - **Source:** 002 / User / 2.2.5
 
 <a id="req-2.2.6"></a>
@@ -239,9 +304,11 @@ profile, or preferences. Authentication and reset preconditions require
 **REQ-2.3.2**
 
 - **Required outcome and constraints:** Allow a user to choose a notification channel.
-- **Acceptance criterion:** A supported channel selection is stored and used for dispatch;
-  available channels and fallback require
-  [OPEN-002-2](002-detailed-requirements.md#open-002-2).
+  WhatsApp is the default communication channel.
+- **Acceptance criterion:** A user without an explicit channel choice defaults to
+  WhatsApp. A supported choice is stored and used for dispatch, subject to
+  [REQ-2.3.1](002-detailed-requirements.md#req-2.3.1). Other supported channels and
+  fallback remain in [OPEN-002-2](002-detailed-requirements.md#open-002-2).
 - **Source:** 002 / User / 2.3.2
 
 <a id="req-2.4.1"></a>
@@ -249,9 +316,11 @@ profile, or preferences. Authentication and reset preconditions require
 **REQ-2.4.1**
 
 - **Required outcome and constraints:** Allow a user to deactivate and delete their
-  account.
-- **Acceptance criterion:** Both operations are available under defined rules;
-  reversibility and retention require
+  account. Deleted user accounts are retained for 30 days after deletion and then
+  cleaned up.
+- **Acceptance criterion:** Deletion records the deletion time, retains the account
+  for 30 days, and makes it due for cleanup when that period ends. Deactivation
+  rules, account restoration, and related-data cleanup scope remain in
   [OPEN-002-2](002-detailed-requirements.md#open-002-2).
 - **Source:** 002 / User / 2.4 unnumbered item
 
@@ -276,43 +345,74 @@ generation or validation; cleanup removes consumed or invalid codes.
 **REQ-3.1.1**
 
 - **Required outcome and constraints:** Generate cryptographically secure five-digit
-  numeric codes for accounts, contacts, and password resets.
+  numeric codes for accounts, contacts, and password resets. Each requesting service
+  must supply a purpose, and every generated code is paired with that purpose.
 - **Acceptance criterion:** Generated codes contain five numeric digits and use a
   cryptographically secure generator; review generation and format, including leading
-  zeros.
+  zeros. Generation without a purpose fails; a successful generation retains the
+  supplied purpose with the code.
 - **Source:** 002 / Verification code / 3.1.1
+
+<a id="req-3.1.2"></a>
+
+**REQ-3.1.2**
+
+- **Required outcome and constraints:** Generating five codes within ten minutes
+  for the same service-supplied purpose triggers a one-hour block on further code
+  generation for that purpose. Counters and blocks are independent per purpose.
+  A second block for that purpose triggered within 24 hours of the first block's
+  start lasts 24 hours. Resends count as generation; blocked requests do not
+  generate codes.
+- **Acceptance criterion:** The fifth generated code in a ten-minute window triggers
+  a block for that purpose; further generation for it fails until the block expires.
+  Other purposes remain unaffected. If the threshold for the same purpose
+  is reached again within 24 hours of the first block's start, the second block
+  lasts 24 hours from its own start. Verify first-block and second-block expiry,
+  resend counting, concurrent generation, and independence between purposes.
+  Remaining window and escalation cases require
+  [OPEN-002-3](002-detailed-requirements.md#open-002-3).
+- **Source:** User decision resolving generation limits in
+  [OPEN-002-3](002-detailed-requirements.md#open-002-3).
 
 <a id="req-3.2.1"></a>
 
 **REQ-3.2.1**
 
-- **Required outcome and constraints:** Check whether a submitted code matches the stored
-  code and is within its validity period.
-- **Acceptance criterion:** Matching, in-period codes pass the code check; mismatched or
-  expired codes fail. Duration and boundary semantics require
-  [OPEN-002-3](002-detailed-requirements.md#open-002-3).
+- **Required outcome and constraints:** A code is valid for five minutes from generation
+  and can be used successfully only once. Check the submitted value, proof scope,
+  service-supplied purpose, expiry, and whether the code has been used or invalidated
+  by resend. A code issued for one purpose cannot authorize another purpose.
+- **Acceptance criterion:** A matching, unused, non-invalidated code for the applicable
+  proof can succeed before generation time plus five minutes. At or after that
+  deadline it fails. Mismatched, used, or invalidated codes fail even before expiry;
+  a code submitted for a different purpose also fails. Concurrent submissions
+  cannot both consume the same code successfully.
 - **Source:** 002 / Verification code / 3.2, incorrectly numbered 3.1.2
 
 <a id="req-3.3.1"></a>
 
 **REQ-3.3.1**
 
-- **Required outcome and constraints:** Clear codes that have been used or are no longer
-  valid.
-- **Acceptance criterion:** Used and invalid codes are removed according to an agreed
-  cleanup policy; timing and retention require
-  [OPEN-002-3](002-detailed-requirements.md#open-002-3).
+- **Required outcome and constraints:** Discard all verification codes within 24 hours
+  of generation, including used, expired, and resend-invalidated codes. Physical
+  retention must never extend a code's validity.
+- **Acceptance criterion:** Cleanup removes codes no later than generation time plus
+  24 hours. Used, expired, or invalidated codes cannot validate while awaiting
+  cleanup. Removing code records does not erase an unexpired generation block or
+  the history still needed for [REQ-3.1.2](002-detailed-requirements.md#req-3.1.2).
 - **Source:** 002 / Verification code / 3.3; 003 / CAP 3.3
 
 ### 1.4 Subscription management
 
 Actor and trigger: Subscription policy supplies entitlements to organisation operations.
 
-The source contains a heading without detailed requirements. Organisation tier rules
-remain in [REQ-1.1.4](002-detailed-requirements.md#req-1.1.4),
-[REQ-1.2.1](002-detailed-requirements.md#req-1.2.1),
-[REQ-1.4.1](002-detailed-requirements.md#req-1.4.1). Additional subscription behavior is
-[OPEN-002-4](002-detailed-requirements.md#open-002-4).
+Subscription sets the maximum users per organisation (default: three including the
+superuser) and the maximum organisations per superuser (default: one), under
+[REQ-1.1.4](002-detailed-requirements.md#req-1.1.4) and
+[REQ-1.4.1](002-detailed-requirements.md#req-1.4.1). On tier expiry, excess
+organisations are disabled randomly under
+[REQ-1.4.2](002-detailed-requirements.md#req-1.4.2). Non-default tier values and
+remaining subscription behavior are [OPEN-002-4](002-detailed-requirements.md#open-002-4).
 
 ### 1.5 Sites, assets, and gateways
 
@@ -532,34 +632,82 @@ and commands; sensors and actuators operate within their assignments.
 
 **OPEN-002-1**
 
-- **Decision needed and affected work:** Define organisation name equivalence, superuser
-  transfer, tier limits, continuity, membership permissions, and deletion/disable effects.
-  These block complete organisation acceptance and lifecycle design.
+- **Status:** Partially resolved by the user decisions on organisation rules.
+- **Resolved:** Name uniqueness ignores case, trims, and collapses whitespace
+  ([REQ-1.1.1](002-detailed-requirements.md#req-1.1.1)). Verified superuser transfer
+  is irreversible and immediately removes the former superuser's status
+  ([REQ-1.1.3](002-detailed-requirements.md#req-1.1.3)). Subscription sets both limit
+  dimensions; tier expiry randomly disables excess organisations
+  ([REQ-1.1.4](002-detailed-requirements.md#req-1.1.4),
+  [REQ-1.4.1](002-detailed-requirements.md#req-1.4.1),
+  [REQ-1.4.2](002-detailed-requirements.md#req-1.4.2)). Disable retains data
+  indefinitely; deletion permits only reactivation before 30-day cleanup of all
+  organisation-owned assets, excluding users
+  ([REQ-1.5.1](002-detailed-requirements.md#req-1.5.1),
+  [REQ-1.5.2](002-detailed-requirements.md#req-1.5.2)).
+- **Decision needed and affected work:** Define membership permissions, verification
+  method and recipient eligibility for transfer, the former superuser's remaining
+  membership/role, and who may reactivate a deleted organisation. Subscription
+  values, transfer-limit interactions, and expiry/reactivation cases are tracked in
+  [OPEN-002-4](002-detailed-requirements.md#open-002-4).
 
 <a id="open-002-2"></a>
 
 **OPEN-002-2**
 
-- **Decision needed and affected work:** Define phone/email normalization and
-  verification, duplicate-account rules, passwords and authentication, role scope,
-  notification channels/fallback, account/contact state coupling, and deletion retention.
-  Do not derive these policies solely from current columns.
+- **Status:** Partially resolved by the user decision on account rules.
+- **Resolved:** International phone representation and rejection of duplicate accounts
+  ([REQ-2.1.1](002-detailed-requirements.md#req-2.1.1)); lowercase email
+  ([REQ-2.2.5](002-detailed-requirements.md#req-2.2.5)); passwords of at least eight
+  characters with lowercase, uppercase, and digits
+  ([REQ-2.2.1](002-detailed-requirements.md#req-2.2.1)); WhatsApp by default
+  ([REQ-2.3.2](002-detailed-requirements.md#req-2.3.2)); and 30-day retention after
+  account deletion ([REQ-2.4.1](002-detailed-requirements.md#req-2.4.1)).
+- **Decision needed and affected work:** Define supported phone numbering ranges,
+  conversion versus rejection of mixed-case email input, email uniqueness and other
+  duplicate-identity criteria, and identifier reuse after deletion. Name validation,
+  mandatory registration fields, authentication/reset authorization and proof,
+  role scope, other channels/fallback, account/contact state coupling, account
+  restoration, and related-data cleanup scope remain open.
 
 <a id="open-002-3"></a>
 
 **OPEN-002-3**
 
-- **Decision needed and affected work:** Define code lifetime, expiry boundary, proof
-  scope, replay/use semantics, resend invalidation, throttling, and cleanup timing.
-  Five-digit secure generation is already required; these policies are not specified.
+- **Status:** Partially resolved by the user decisions on verification codes and
+  service-supplied purposes.
+- **Resolved:** Every code is paired with a purpose supplied by the requesting
+  service ([REQ-3.1.1](002-detailed-requirements.md#req-3.1.1)); generation counts and
+  blocks apply independently per purpose. Five-minute lifetime and single use
+  ([REQ-3.2.1](002-detailed-requirements.md#req-3.2.1)); resend replacement
+  ([REQ-2.2.4](002-detailed-requirements.md#req-2.2.4)); five codes in ten minutes,
+  a one-hour block, and a second block within 24 hours lasting 24 hours
+  ([REQ-3.1.2](002-detailed-requirements.md#req-3.1.2)); all codes discarded within
+  24 hours ([REQ-3.3.1](002-detailed-requirements.md#req-3.3.1)).
+- **Decision needed and affected work:** Define the purpose vocabulary and how each
+  service binds a purpose to the intended user/contact/request; rolling versus
+  fixed ten-minute windows and exact window boundaries; subsequent-block
+  escalation/reset behavior; and any failed-validation attempt limit. These
+  constrain complete throttle and proof acceptance without changing the agreed
+  per-purpose scope, durations, and thresholds.
 
 <a id="open-002-4"></a>
 
 **OPEN-002-4**
 
-- **Decision needed and affected work:** Expand subscription requirements beyond the
-  existing organisation entitlements; the original Subscription management section was
-  empty.
+- **Resolved:** Subscription controls organisation user counts and each user's
+  superuser-account count. Tier expiry randomly disables excess organisations;
+  see [REQ-1.1.4](002-detailed-requirements.md#req-1.1.4),
+  [REQ-1.4.1](002-detailed-requirements.md#req-1.4.1), and
+  [REQ-1.4.2](002-detailed-requirements.md#req-1.4.2).
+- **Defaults:** One organisation per superuser and three users total per organisation,
+  including its superuser (up to two other members). Expiry restores the default
+  organisation allowance.
+- **Decision needed and affected work:** Define non-default tier values; how
+  disabled/deleted organisations count for creation and transfer; transfer to a recipient at their limit; whether
+  pending invitations count toward organisation membership; handling of existing members
+  above a reduced limit; and reactivation after expiry or renewal. Complete the
+  subscription lifecycle and user/organisation entitlement relationships.
 
 <a id="open-002-5"></a>
 

@@ -14,7 +14,7 @@ not establish conflicting rules.
 | [001-general-description.md](001-general-description.md) | Product intent, stakeholders, and scope | Shared vocabulary, capability overview, quality goals |
 | [002-detailed-requirements.md](002-detailed-requirements.md) | Elaborate 001 into observable obligations | Functional and quality requirements with acceptance criteria |
 | [003-business-architecture.md](003-business-architecture.md) | Interpret 002 in business terms | Capability, information, and value maps with cross-mappings |
-| [004-data-architecture.md](004-data-architecture.md) | Derive data from 003 and its source requirements | Conceptual relationships, logical entities, attributes, physical mappings |
+| [004-data-architecture.md](004-data-architecture.md) | Map information concepts in 003 to storage | Existing and proposed tables, columns, keys, constraints, indexes, migration gaps |
 | [005-application-architecture.md](005-application-architecture.md) | Allocate business capabilities and workflows to components | Contracts, interactions, state handling, and failure boundaries |
 | [006-technology-architecture.md](006-technology-architecture.md) | Realize 004 and 005 under quality constraints from 002 | Runtime, infrastructure, deployment, security, and operational design |
 | [use-cases/000-use-case-template.md](use-cases/000-use-case-template.md) and grouped use-case files | Elaborate requirements and capabilities into actor interactions | Detailed flows, shared-rule references, state/event outcomes, and acceptance criteria |
@@ -141,19 +141,17 @@ children. A capability can enable several stages or streams.
 
 ### 3.3 Data, application, and technology derivation
 
-Treat every primary and secondary information concept as an entity candidate,
-not automatically as one physical table. Carry its business definition forward.
-Use concept associations and matching capabilities to propose relationships;
-validate cardinality, optionality, and ownership against concrete scenarios.
-Derive attributes from decomposed capabilities and their outcomes. Distinguish
-business identifiers and uniqueness rules from technical surrogate keys; not
-every attribute is a natural key.
+Use the information map as the conceptual source for 004; do not repeat its
+concept definitions, lifecycle narratives, or cross-maps there. Consider each
+concept for storage without assuming one table per concept. Describe existing
+and proposed tables, columns and SQL types, keys, nullability, constraints, indexes,
+and physical relationships. Keep business-rule references linked to 002/003.
 
-Carry types, states, and state-changing outcomes into data constraints and domain
-behavior. Explain any merge, split, or deferred entity. Separate conceptual
-meaning, logical structure, and physical storage. Trace acquisition, access,
-modification, retention, provenance, and quality requirements to their business
-sources; leave unspecified policies open.
+Clearly distinguish migration evidence from proposed schema. Explain merged,
+split, or deferred storage mappings briefly, preserving DATA identifiers. Record
+backfill, compatibility, retention-query, and migration gaps. Put workflow and
+transaction sequencing in 005; keep only the storage invariants needed to review
+schema changes in 004. Unresolved business policy remains in its owning requirement.
 
 Map capabilities and value stages to application responsibilities and contracts;
 there is no required one-to-one capability/service correspondence. Map data and
@@ -358,48 +356,52 @@ uncertainties are explicit; stages have outcomes and enabling-capability links.
 
 ### 4.4 Data architecture template
 
-Input: information map, capabilities, scenarios, and constraints. Output: justified
-entities and relationships with persistence mappings. Completion: business sources
-exist for entities and attributes; physical evidence does not silently define policy.
+Input: information concepts in 003 and rules in 002. Output: a concise storage
+reference. Completion: table definitions match migration evidence, proposed additions
+are labeled, and constraints/indexes trace to requirements without repeating the
+conceptual map or application workflows.
 
 ```markdown
 # Data architecture
 
-## 1 Purpose and derivation
+## 1 Purpose and status
 
-<Information-to-entity derivation and design/evidence distinction.>
+<Scope, upstream links, and distinction between existing and proposed schema.>
 
-## 2 Conceptual relationships
+## 2 Existing tables
 
-| Source concept | Entity candidate | Relationship and cardinality | Scenario or open decision |
-| --- | --- | --- | --- |
-| <INFO link> | <DATA link> | <Ownership, multiplicity, optionality> | <REQ/scenario/OPEN> |
+### 2.1 <Table>
 
-## 3 Logical entities and attribute dictionary
+<a id="data-1"></a>
 
-### 3.1 <Entity>
+**DATA-1 — <table_name>** · <INFO link> · Existing
 
-<Anchored DATA ID; definition; source INFO/CAP/REQ; identity and lifecycle.>
+| Column | PostgreSQL type | Key or constraint |
+| --- | --- | --- |
+| <column> | <SQL type> | <PK/FK, nullability, uniqueness, default, check> |
 
-| Attribute | Logical type | Constraints and business meaning | Derivation |
-| --- | --- | --- | --- |
-| <Name> | <Type> | <Nullability, identifier role, invariant> | <Source or technical rationale> |
+<Indexes, column mappings, and migration evidence.>
 
-## 4 Lifecycle and integrity
+## 3 Proposed schema changes
 
-<States, types, supported transitions, relationships, and concurrency constraints.>
+<Proposed table/column definitions, constraints, indexes, and upstream rule links.
+Retain DATA anchors for deferred mappings; do not invent a table for every concept.>
 
-## 5 Physical mappings and evidence
+## 4 Integrity and retention
 
-<Tables, columns, SQL types, indexes, migration links, and naming differences.>
+<Storage constraints, cleanup predicates, and links to application sequencing.>
 
-## 6 Governance and quality
+## 5 Migration and implementation gaps
 
-<Sources, use/modify access, ownership, freshness, retention, lineage, validation.>
+<Backfills, compatibility, physical implementation evidence, and required migrations.>
 
-## 7 Open decisions and legacy mapping
+## 6 Remaining storage decisions
 
-<Unresolved rules, entity candidates, and old-to-new record references.>
+<Anchored OPEN records for unresolved schema and storage operations.>
+
+## 7 Legacy mapping
+
+<Preserved DATA IDs and previous names where applicable.>
 ```
 
 ### 4.5 Application architecture template

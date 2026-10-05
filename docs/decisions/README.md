@@ -78,6 +78,7 @@ not apply.
 - [ADR-003 — Usage limits owned by service](003-usage-limits-owned-by-service.md) — Proposed.
 - [ADR-004 — Typed user state machine](004-typed-user-state-machine.md) — Accepted.
 - [ADR-005 — Service contract entry points](005-service-contract-entry-points.md) — Accepted.
+- [ADR-006 — Verification code lifecycle and generation controls](006-verification-code-lifecycle-and-controls.md) — Proposed.
 
 ## 6 Relationship to other documentation
 
