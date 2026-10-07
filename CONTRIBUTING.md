@@ -128,7 +128,7 @@ Database tests must use isolated test databases with migrations applied and clea
 up their own data. Unit tests must run without live databases or external services. For user
 persistence integration tests, follow the isolated
 [Compose test setup](docker-compose/README.md#isolated-user-database-tests); run
-`cargo test --locked --features database-tests --test users_persistence` against
+`cargo test --locked --features database-tests --test users_persistence --test user_permissions_persistence` against
 that disposable service. CI enforces this integration target separately.
 
 Stop the development services when finished:

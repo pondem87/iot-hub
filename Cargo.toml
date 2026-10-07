@@ -19,3 +19,8 @@ database-tests = []
 name = "users_persistence"
 path = "tests/users_persistence.rs"
 required-features = ["database-tests"]
+
+[[test]]
+name = "user_permissions_persistence"
+path = "tests/user_permissions_persistence.rs"
+required-features = ["database-tests"]

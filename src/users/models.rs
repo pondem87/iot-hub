@@ -127,6 +127,8 @@ pub struct DisabledContact;
 pub struct User<State> {
     id: Uuid,
     phone_number: String,
+    /// Encoded password hash; never plaintext or diagnostic output.
+    password: String,
     user_type: UserType,
     state: UserState,
     profile_id: Uuid,
@@ -155,6 +157,12 @@ impl<State> User<State> {
     /// Returns the stored phone_number value; this is not an authorization decision.
     pub fn phone_number(&self) -> &str {
         &self.phone_number
+    }
+
+    /// Borrows the stored encoded password hash for credential verification.
+    /// This does not authorize access; do not expose it in responses or diagnostics.
+    pub fn password(&self) -> &str {
+        &self.password
     }
 
     /// Returns the stored user_type value; this is not an authorization decision.
@@ -313,6 +321,7 @@ impl User<UnverifiedUser> {
         Ok(Self {
             id: row.id,
             phone_number: row.phone_number,
+            password: row.password,
             user_type: row.user_type,
             state: row.state,
             profile_id: row.profile_id,
@@ -339,6 +348,7 @@ impl User<ActiveUser> {
         Ok(Self {
             id: row.id,
             phone_number: row.phone_number,
+            password: row.password,
             user_type: row.user_type,
             state: row.state,
             profile_id: row.profile_id,
@@ -365,6 +375,7 @@ impl User<InactiveUser> {
         Ok(Self {
             id: row.id,
             phone_number: row.phone_number,
+            password: row.password,
             user_type: row.user_type,
             state: row.state,
             profile_id: row.profile_id,
@@ -391,6 +402,7 @@ impl User<BarredUser> {
         Ok(Self {
             id: row.id,
             phone_number: row.phone_number,
+            password: row.password,
             user_type: row.user_type,
             state: row.state,
             profile_id: row.profile_id,
@@ -417,6 +429,7 @@ impl User<DeletedUser> {
         Ok(Self {
             id: row.id,
             phone_number: row.phone_number,
+            password: row.password,
             user_type: row.user_type,
             state: row.state,
             profile_id: row.profile_id,
@@ -508,6 +521,8 @@ impl UserContact<DisabledContact> {
 pub(super) struct UserData {
     pub(super) id: Uuid,
     pub(super) phone_number: String,
+    /// Encoded password hash loaded from the required password column.
+    pub(super) password: String,
     pub(super) user_type: UserType,
     pub(super) state: UserState,
     pub(super) profile_id: Uuid,
@@ -586,6 +601,7 @@ mod tests {
     //! - `checks_user_states`: checks every constructor against every user state.
     //! - `checks_contact_states`: checks every constructor against every contact state.
     //! - `redacts_contact_details`: excludes phone and address values from domain Debug output.
+    //! - `preserves_password_in_every_state`: preserves credentials without Debug exposure.
     //! - `reads_stored_fields`: retains user and contact data through checked construction.
     //!
     //! Rustdoc examples cover inaccessible construction and lifecycle mutation with valid companions.
@@ -604,6 +620,7 @@ mod tests {
         UserData {
             id: Uuid::from_u128(1),
             phone_number: "phone".into(),
+            password: "test-encoded-password-hash".into(),
             user_type: UserType::Staff,
             state,
             profile_id: Uuid::from_u128(2),
@@ -712,6 +729,7 @@ mod tests {
         let user = User::<ActiveUser>::from_persisted(user_data(UserState::Active)).unwrap();
         assert_eq!(user.id(), Uuid::from_u128(1));
         assert_eq!(user.phone_number(), "phone");
+        assert_eq!(user.password(), "test-encoded-password-hash");
         assert_eq!(user.user_type(), UserType::Staff);
         assert_eq!(user.profile_id(), Uuid::from_u128(2));
         assert_eq!(user.preferences_id(), Uuid::from_u128(3));
@@ -726,5 +744,29 @@ mod tests {
         assert_eq!(contact.user_id(), user.id());
         assert_eq!(contact.created_at(), user.created_at());
         assert_eq!(contact.updated_at(), user.updated_at());
+    }
+
+    #[test]
+    fn preserves_password_in_every_state() {
+        fn check<State>(user: &User<State>) {
+            assert_eq!(user.password(), "test-encoded-password-hash");
+            assert!(!format!("{user:?}").contains("test-encoded-password-hash"));
+        }
+
+        for state in [
+            UserState::Unverified,
+            UserState::Active,
+            UserState::Inactive,
+            UserState::Barred,
+            UserState::Deleted,
+        ] {
+            match user_data(state).validate().unwrap() {
+                StoredUser::Unverified(user) => check(&user),
+                StoredUser::Active(user) => check(&user),
+                StoredUser::Inactive(user) => check(&user),
+                StoredUser::Barred(user) => check(&user),
+                StoredUser::Deleted(user) => check(&user),
+            }
+        }
     }
 }

@@ -18,6 +18,7 @@ CREATE TABLE user_preferences (
 CREATE TABLE users (
     id UUID PRIMARY KEY,
     phone_number TEXT NOT NULL UNIQUE,
+    password TEXT NOT NULL,
     "user_type" user_type NOT NULL,
     state user_state NOT NULL,
     profile_id UUID NOT NULL UNIQUE REFERENCES user_profiles (id),

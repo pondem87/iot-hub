@@ -335,6 +335,27 @@ profile, or preferences. Authentication and reset preconditions require
   [OPEN-002-2](002-detailed-requirements.md#open-002-2).
 - **Source:** 001 / Users; Organisations; Sites, gateway, assets, sensors and assets
 
+<a id="req-2.5.2"></a>
+
+**REQ-2.5.2**
+
+- **Required outcome and constraints:** For user-domain resource access, combine
+  matching user and role grants, including collection grants for object requests.
+  Require at least one matching grant and coverage of every requested attribute.
+  Managing grants requires permission on permission records themselves: collection
+  create to add grants, collection read to list grants, and object delete on the
+  grant UUID to revoke. Initial administrator grants require trusted provisioning
+  outside the permission service.
+- **Acceptance criterion:** Partial user and role selections combine; missing
+  coverage, wrong identities, actions, resources, or target objects deny access.
+  Unauthorized management cannot create, retrieve, or revoke grants. Operational
+  failures remain distinguishable from denial. Permission creation checks written
+  fields and listing checks every returned field; revocation checks object delete.
+- **Source:** User decisions on 2026-10-06; implementation policy and remaining
+  integration limits are recorded in
+  [ADR-007](decisions/007-user-permission-provider-and-storage.md) and
+  [APP-10](005-application-architecture.md#app-10).
+
 ### 1.3 Verification code management
 
 Actor and trigger: Registration, contact verification, and password reset initiate code

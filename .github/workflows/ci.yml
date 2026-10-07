@@ -26,7 +26,7 @@ jobs:
       - name: Database integration tests
         env:
           DATABASE_URL: postgres://postgres:postgres@127.0.0.1:15431/iot_hub_tests
-        run: cargo test --locked --features database-tests --test users_persistence
+        run: cargo test --locked --features database-tests --test users_persistence --test user_permissions_persistence
       - name: Stop isolated PostgreSQL
         if: always()
         run: docker compose -p iot-hub-tests -f docker-compose/compose.test.yaml down
