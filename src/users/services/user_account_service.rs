@@ -93,6 +93,7 @@ mod tests {
         User::<ActiveUser>::from_persisted(crate::users::models::UserData {
             id: Uuid::nil(),
             phone_number: "phone".into(),
+            password: "test-encoded-password-hash".into(),
             user_type: UserType::Customer,
             state: UserState::Active,
             profile_id: Uuid::nil(),

@@ -19,7 +19,7 @@ impl UserRepository {
         Self { pool }
     }
     async fn load(&self, id: Uuid) -> Result<Option<UserData>, UserRepositoryError> {
-        sqlx::query_as::<_, UserData>("SELECT id, phone_number, user_type, state, profile_id, preferences_id, created_at, updated_at FROM users WHERE id = $1").bind(id).fetch_optional(&self.pool).await.map_err(storage_error)
+        sqlx::query_as::<_, UserData>("SELECT id, phone_number, password, user_type, state, profile_id, preferences_id, created_at, updated_at FROM users WHERE id = $1").bind(id).fetch_optional(&self.pool).await.map_err(storage_error)
     }
 }
 impl UserStore for UserRepository {
@@ -66,6 +66,7 @@ mod tests {
         UserData {
             id: Uuid::nil(),
             phone_number: "test".into(),
+            password: "test-encoded-password-hash".into(),
             user_type: UserType::Customer,
             state,
             profile_id: Uuid::nil(),

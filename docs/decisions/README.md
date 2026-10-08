@@ -80,6 +80,8 @@ not apply.
 - [ADR-005 — Service contract entry points](005-service-contract-entry-points.md) — Accepted.
 - [ADR-006 — Verification code lifecycle and generation controls](006-verification-code-lifecycle-and-controls.md) — Proposed.
 
+- [ADR-007 — User permission provider and storage](007-user-permission-provider-and-storage.md) — Accepted.
+
 ## 6 Relationship to other documentation
 
 - Requirements and use cases describe what the system must do.

@@ -141,6 +141,21 @@ An account read calls the `UserStore` contract, whose implementation decodes
 and maps repository failures into its service error contract. These checks retain
 their responsibilities regardless of how the future external API is composed.
 
+## Permissions foundation
+
+The shared `permissions` module defines generic grant representations, inspection
+traits, asynchronous provider contracts, and structured provider errors. The users
+domain supplies its resource/action/attribute vocabulary, SQLx `UserPermissionData`,
+checked conversion, PostgreSQL repository, and `UserPermissionsProviderService`.
+The provider combines user/role grants and authorizes grant management against
+permissions on permission records. Callers establish authentication and role
+membership; the provider is not yet integrated into HTTP or user read workflows.
+
+See [permissions architecture](docs/005-application-architecture.md#app-10) for
+ownership, data flow, error boundaries, validation evidence, and unresolved policy
+and persistence contracts. Authorization decisions remain in business services;
+SQL and technical error translation remain in repositories.
+
 ## Repository state contract
 
 Repository functions that return stateful domain objects must verify the stored

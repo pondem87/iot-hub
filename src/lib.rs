@@ -4,6 +4,7 @@ pub mod db;
 pub mod events;
 pub mod http;
 pub mod messages;
+pub mod permissions;
 pub mod state;
 pub mod users;
 pub mod v_codes;

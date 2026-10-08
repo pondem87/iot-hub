@@ -7,14 +7,16 @@ to tables, columns, keys, constraints, and indexes. Business definitions and lif
 rules belong in [003](003-business-architecture.md); workflows belong in
 [005](005-application-architecture.md).
 
-**Existing** means declared by the
-[core migration](../migrations/core_db/001_initial_user_models.sql).
+**Existing** means declared by the committed core migrations. Section 2 covers
+[the initial user tables](../migrations/core_db/001_initial_user_models.sql);
+section 5 documents [permission storage](../migrations/core_db/002_user_permissions.sql).
 **Proposed** means a schema design requiring a new migration and implementation;
-no proposed column or table is present in that migration.
+no proposed column or table is present in those migrations.
 
 ## 2 Existing core tables
 
-All existing columns are `NOT NULL`. UUID primary keys, timestamps, and other values
+For the initial user tables in this section, all columns are `NOT NULL`.
+UUID primary keys, timestamps, and other values
 have no SQL defaults. Timestamps use `TIMESTAMPTZ` / Rust `DateTime<Utc>`.
 There are no `ON DELETE CASCADE` clauses or automatic timestamp updates.
 
@@ -28,12 +30,26 @@ There are no `ON DELETE CASCADE` clauses or automatic timestamp updates.
 | --- | --- | --- |
 | id | UUID | Primary key |
 | phone_number | TEXT | Unique |
+| password | TEXT | Required encoded password hash; no default |
 | user_type | user_type | Enum: superuser, staff, customer |
 | state | user_state | Enum: unverified, active, inactive, barred, deleted |
 | profile_id | UUID | Unique FK → user_profiles.id |
 | preferences_id | UUID | Unique FK → user_preferences.id |
 | created_at | TIMESTAMPTZ | Required |
 | updated_at | TIMESTAMPTZ | Required |
+
+The `password` column is decoded into `UserData` and preserved by every checked
+`User<State>` constructor. It holds an encoded password hash, not plaintext.
+`User::password()` exposes the stored value to trusted credential-verification
+code; domain Debug output and existing response schemas omit it. Hash generation,
+format validation, verification, and password-change/reset workflows are not
+implemented by adding this storage field.
+
+Migration 001 was updated directly at the user's request. Fresh databases include
+the required column. Databases that already applied the old migration will have a
+SQLx checksum mismatch and will not gain the column automatically. Recreate only
+disposable development/test databases; shared installations need a separately
+planned schema/backfill and migration-history upgrade rather than rerunning 001.
 
 ### 2.2 Profiles
 
@@ -93,7 +109,7 @@ foreign keys allow unreferenced secondary rows. See
   [REQ-2.1.1](002-detailed-requirements.md#req-2.1.1) and
   [REQ-2.2.5](002-detailed-requirements.md#req-2.2.5). Existing phone uniqueness already
   prevents duplicate stored phone values; contact/email uniqueness is undecided.
-- Credential storage, existing-row backfills, and profile/preference cleanup remain
+- Password hashing/verification policy, existing-row backfills, and profile/preference cleanup remain
   [OPEN-004-1](#open-004-1). Do not store plaintext passwords.
 
 ### 3.2 Organisations
@@ -219,9 +235,38 @@ These stable DATA identifiers have no selected physical tables yet.
 
 ## 5 Migration and implementation gaps
 
-Only the four tables in section 2 exist in the migration. Verification
+The initial migration defines the four tables in section 2; migration 002 adds
+the permission table described below. Verification
 [traits](../src/v_codes/traits.rs) declare string/boolean operations without purpose
 or persistence; [models.rs](../src/v_codes/models.rs) is empty.
+
+The [permission provider](005-application-architecture.md#app-10) uses
+[migration 002](../migrations/core_db/002_user_permissions.sql):
+
+- **Table:** `user_permissions`; primary key `id UUID` defaults to
+  `gen_random_uuid()`. `principal_id UUID`, `attributes TEXT`, and the enum columns
+  are non-null. `resource_id UUID` is nullable only for collection grants.
+- **Enums:** `users_permission_principal_type` stores `role`/`user`;
+  `users_permission_type` stores `collection`/`object`;
+  `users_permission_resource` stores `user`, `user_contact`, `user_profile`,
+  `user_preferences`, and `user_permission`; `users_permission_action` stores
+  `create`, `read`, `update`, and `delete`.
+- **Columns:** `principal_type`, `perm_type`, `resource`, and `action` use the
+  corresponding enums. SQLx decodes these explicitly into `UserPermissionData`.
+- **Constraints:** The scope check requires a target UUID for object grants and
+  forbids it for collection grants. Principal and resource references are
+  polymorphic without foreign keys. Duplicate grants are allowed and have separate
+  UUIDs; lifecycle cleanup and referenced-object existence remain caller concerns.
+- **Attributes:** Text contains JSON `"all"` or an array of snake_case attribute
+  names. The repository validates this after decoding; PostgreSQL does not enforce
+  the attribute vocabulary. Invalid stored data fails the whole matching lookup.
+- **Index:** `(principal_type, principal_id)` supports recipient-scoped reads.
+- **Deployment:** Apply migration 002 before provider use. Initial administrator
+  grants need controlled provisioning outside the service; no grants are seeded.
+  Existing user tables and rows are unchanged. Rolling application code back does
+  not require dropping the new table; retain its grants for a subsequent upgrade.
+- **Scope:** This implements user-domain grant storage, not the organisation policy
+  mapping in [DATA-6](#data-6). See [ADR-007](decisions/007-user-permission-provider-and-storage.md).
 
 Add new migrations for proposed tables, fields, constraints, and indexes. Plan
 backfills and check existing rows before introducing validation or uniqueness
@@ -233,7 +278,7 @@ No migration or source-code change is included in this documentation update.
 
 <a id="open-004-1"></a>
 
-- **OPEN-004-1 — User schema:** Credential storage, email uniqueness, timestamp authority,
+- **OPEN-004-1 — User schema:** Password hashing/verification policy, email uniqueness, timestamp authority,
   channel representation/backfill, orphan profile/preference cleanup, and reconciliation
   of global `user_type` with organisation superuser references. Remaining business rules:
   [OPEN-002-2](002-detailed-requirements.md#open-002-2).

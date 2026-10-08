@@ -17,7 +17,7 @@ From repository root:
 ```sh
 docker compose -p iot-hub-tests -f docker-compose/compose.test.yaml up -d --wait core-db
 DATABASE_URL=postgres://postgres:postgres@127.0.0.1:15431/iot_hub_tests \
-  cargo test --locked --features database-tests --test users_persistence
+  cargo test --locked --features database-tests --test users_persistence --test user_permissions_persistence
 docker compose -p iot-hub-tests -f docker-compose/compose.test.yaml down
 ```
 
@@ -30,7 +30,7 @@ diagnostics until the disposable Compose service is removed. Always run the fina
 No standalone PostgreSQL installation or SQLx CLI is needed.
 
 Ordinary `cargo test --locked` runs unit and documentation tests without live
-services. The `database-tests` feature adds the integration target; CI runs it
+services. The `database-tests` feature adds both integration targets; CI runs it
 explicitly and lints it with `--all-targets --features database-tests`.
 
 ## Local PostgreSQL alternative
@@ -53,7 +53,7 @@ iot_hub_pg_dir=$(mktemp -d /tmp/iot-hub-postgres.XXXXXX)
   -o "-h 127.0.0.1 -p 15431 -k $iot_hub_pg_dir" start
 /usr/lib/postgresql/15/bin/createdb -h 127.0.0.1 -p 15431 -U postgres iot_hub_tests
 DATABASE_URL=postgres://postgres@127.0.0.1:15431/iot_hub_tests \
-  cargo test --locked --features database-tests --test users_persistence
+  cargo test --locked --features database-tests --test users_persistence --test user_permissions_persistence
 /usr/lib/postgresql/15/bin/pg_ctl -D "$iot_hub_pg_dir" stop
 ```
 
@@ -61,3 +61,22 @@ Run the final stop command even if tests fail. Inspect any failed test databases
 while the temporary instance is running; discard its temporary directory after
 shutdown when diagnostics are no longer needed. Do not reuse this instance for
 application or shared data.
+
+## Permission storage tests
+
+The permission target applies migration 002 in each isolated SQLx test database.
+It verifies SQL enum mappings, principal isolation, collection/object grants,
+attribute decoding, rollback of invalid insert results, and provider authorization
+through PostgreSQL. It provisions administrative grants directly through the
+repository only inside those disposable tests. Production bootstrap provisioning
+is a separate trusted operation; the provider never grants initial authority itself.
+
+## Password column in initial user migration
+
+Migration 001 now requires `users.password TEXT NOT NULL` for encoded password
+hashes. Fresh isolated tests insert a synthetic placeholder solely to verify
+storage mapping; they do not exercise hashing or authenticate with that value.
+The initial migration was edited as requested, so an existing database with its
+previous SQLx checksum needs an explicit upgrade plan. Do not rerun or reset a
+shared database to bypass that mismatch. Only disposable databases may be recreated
+using the fresh migration.

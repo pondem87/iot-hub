@@ -7,7 +7,8 @@ mod tests {
     //! SQLx creates a migrated database per test and cleans it up after success.
     //!
     //! # Test plan
-    //! - `loads_every_user_state`: loads validated users for every SQL state and role.
+    //! - `loads_every_user_state`: loads validated users and their password hashes
+    //!   for every SQL state and role, preserving diagnostic redaction.
     //! - `distinguishes_user_absence_and_mismatch`: active reads distinguish missing and wrong-state rows.
     //! - `loads_contacts_and_enforces_owner_scope`: maps both contact kinds and every lifecycle state.
     //! - `distinguishes_contact_absence_and_mismatch`: active contact reads preserve scope and mismatch.
@@ -56,7 +57,7 @@ mod tests {
             .await
             .unwrap();
             sqlx::query("INSERT INTO user_preferences (id, allow_notifications, updated_at) VALUES ($1, true, now())").bind(fixture.preferences_id).execute(pool).await.unwrap();
-            sqlx::query("INSERT INTO users (id, phone_number, user_type, state, profile_id, preferences_id, created_at, updated_at) VALUES ($1, $2, $3::text::user_type, $4::text::user_state, $5, $6, now(), now())")
+            sqlx::query("INSERT INTO users (id, phone_number, password, user_type, state, profile_id, preferences_id, created_at, updated_at) VALUES ($1, $2, 'test-encoded-password-hash', $3::text::user_type, $4::text::user_state, $5, $6, now(), now())")
                 .bind(fixture.user_id).bind(format!("test-phone-{ordinal}")).bind(role).bind(state).bind(fixture.profile_id).bind(fixture.preferences_id).execute(pool).await.unwrap();
             fixture
         }
@@ -89,11 +90,31 @@ mod tests {
                     .unwrap()
                     .unwrap();
                 let (id, actual_role) = match (state, user) {
-                    ("unverified", StoredUser::Unverified(user)) => (user.id(), user.user_type()),
-                    ("active", StoredUser::Active(user)) => (user.id(), user.user_type()),
-                    ("inactive", StoredUser::Inactive(user)) => (user.id(), user.user_type()),
-                    ("barred", StoredUser::Barred(user)) => (user.id(), user.user_type()),
-                    ("deleted", StoredUser::Deleted(user)) => (user.id(), user.user_type()),
+                    ("unverified", StoredUser::Unverified(user)) => {
+                        assert_eq!(user.password(), "test-encoded-password-hash");
+                        assert!(!format!("{user:?}").contains("test-encoded-password-hash"));
+                        (user.id(), user.user_type())
+                    }
+                    ("active", StoredUser::Active(user)) => {
+                        assert_eq!(user.password(), "test-encoded-password-hash");
+                        assert!(!format!("{user:?}").contains("test-encoded-password-hash"));
+                        (user.id(), user.user_type())
+                    }
+                    ("inactive", StoredUser::Inactive(user)) => {
+                        assert_eq!(user.password(), "test-encoded-password-hash");
+                        assert!(!format!("{user:?}").contains("test-encoded-password-hash"));
+                        (user.id(), user.user_type())
+                    }
+                    ("barred", StoredUser::Barred(user)) => {
+                        assert_eq!(user.password(), "test-encoded-password-hash");
+                        assert!(!format!("{user:?}").contains("test-encoded-password-hash"));
+                        (user.id(), user.user_type())
+                    }
+                    ("deleted", StoredUser::Deleted(user)) => {
+                        assert_eq!(user.password(), "test-encoded-password-hash");
+                        assert!(!format!("{user:?}").contains("test-encoded-password-hash"));
+                        (user.id(), user.user_type())
+                    }
                     _ => panic!("incorrect typestate returned"),
                 };
                 assert_eq!(id, fixture.user_id);

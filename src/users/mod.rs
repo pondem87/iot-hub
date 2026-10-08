@@ -5,6 +5,7 @@ pub mod event_handlers;
 pub mod event_publishers;
 pub mod events;
 pub mod models;
+pub mod perm;
 pub mod repositories;
 pub mod schemas;
 pub mod services;

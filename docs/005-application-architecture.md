@@ -27,6 +27,10 @@ implementation evidence only, not proof that the application builds or runs.
 | <a id="app-8"></a>APP-8 | Future organisation/device capabilities: allocate membership, invitation, gateway, telemetry, threshold, and command use cases after business mapping is complete. | [CAP-2](003-business-architecture.md#cap-2), [CAP-4](003-business-architecture.md#cap-4), [REQ-5.1.1](002-detailed-requirements.md#req-5.1.1), [REQ-5.4.2](002-detailed-requirements.md#req-5.4.2) | This is a coverage placeholder, not a single prescribed service or implemented component; [OPEN-003-4](003-business-architecture.md#open-003-4), [OPEN-005-3](005-application-architecture.md#open-005-3). |
 | <a id="app-9"></a>APP-9 | Repositories: own SQL and mapping; return validated typestate objects and consumer-oriented persistence errors. | [DATA-1](004-data-architecture.md#data-1), [DATA-2](004-data-architecture.md#data-2), [DATA-3](004-data-architecture.md#data-3), [DATA-4](004-data-architecture.md#data-4) | [Repositories](../src/users/repositories/mod.rs) implement scoped reads for users, profiles, preferences, and contacts. Internal data structs are decoded before checked conversion; active identity lookups distinguish state mismatch from absence. |
 
+The shared permission foundation is described in
+[APP-10](#app-10), including its current implementation limits and open policy
+integration work.
+
 Service and repository implementations follow the style guide's file-separation
 rules. Services expose meaningful traits; the public operation signatures must
 express expected states and recoverable outcomes. Dependencies are injected at
@@ -255,3 +259,179 @@ records are new: the previous document was empty.
 - **Verification:** Colocated unit tests and Rustdoc compile-fail examples cover
   contracts and construction restrictions. The isolated Compose test target is
   documented in [database test setup](../docker-compose/README.md).
+
+## 8 Permissions architecture
+
+<a id="app-10"></a>
+
+**APP-10 — User permission provider and shared contracts**
+
+- **Status:** Implemented representations, asynchronous provider, checked SQLx
+  mapping, PostgreSQL storage, and unit/integration tests. Authentication, role
+  resolution, HTTP integration, and authorization of existing user workflows remain
+  separate work; this is not completion of all REQ-2.5.1 obligations.
+- **Responsibility:** Describe grants with shared structures and evaluate domain
+  vocabularies through an injected store. Grant management itself requires grants
+  on permission records.
+- **Sources:** [REQ-2.5.1](002-detailed-requirements.md#req-2.5.1),
+  [REQ-2.5.2](002-detailed-requirements.md#req-2.5.2),
+  [CAP-1](003-business-architecture.md#cap-1), and
+  [INFO-1.4](003-business-architecture.md#info-1.4). Organisation policy remains
+  separate from this users-domain implementation.
+- **Decision:** [ADR-007](decisions/007-user-permission-provider-and-storage.md)
+  records the policy, async contract change, storage mapping, and its limits.
+
+### 8.1 Ownership and composition
+
+- **Shared contracts:** [permissions/app.rs](../src/permissions/app.rs) defines
+  `PermissionProvider` and inspection/vocabulary traits. I/O methods return
+  `impl Future + Send` with structured results; discovery is synchronous.
+- **Shared representations:** [schemas.rs](../src/permissions/schemas.rs) defines
+  `Permission`, `Scope`, `Principal`, `PermissionActor`, `ScopeObject`, `AttrObject`,
+  and `DiscoveredPermission`. These are Rust representations, not HTTP payloads.
+- **Domain models:** [users/perm/models.rs](../src/users/perm/models.rs) specializes
+  the shared vocabulary and defines SQLx `UserPermissionData`. Its checked
+  constructor validates scope and attribute encoding.
+- **Service:**
+  [UserPermissionsProviderService](../src/users/perm/services/user_permissions_provider_service.rs)
+  implements the shared provider trait. Its generic constructor accepts a
+  `UserPermissionsStore`, allowing isolated unit tests without PostgreSQL.
+- **Storage:** [UserPermissionsRepository](../src/users/perm/repositories/user_permissions_repository.rs)
+  receives an existing `PgPool` and implements
+  [UserPermissionsStore](../src/users/perm/repositories/traits.rs). Repositories
+  perform SQL and checked construction, not caller authorization.
+- **Errors:** [Shared errors](../src/permissions/errors.rs) own authorization and
+  provider outcomes. [User permission errors](../src/users/perm/errors.rs) own
+  decoding and repository outcomes. Old error import paths remain re-exports.
+
+Composition creates `UserPermissionsRepository::new(pool)` and passes it to
+`UserPermissionsProviderService::new(repository)`. Callers import `PermissionProvider`
+for business methods and await I/O operations. No connections are opened secretly,
+no provider is installed in AppState, and no new HTTP endpoint is introduced.
+
+### 8.2 Representation and supported vocabulary
+
+A `Permission` contains its UUID, recipient, scope, and action. `Principal::User`
+and `Principal::Role` are distinct even for equal UUIDs. `PermissionActor` carries
+an acting user and a role whose association must already be established by the
+trusted caller; constructing this value is not authentication.
+
+`ScopeObject::Collection(Resource)` identifies a collection;
+`ScopeObject::ObjectId(Resource, Uuid)` identifies one object. `AttrObject::All`
+covers every attribute, while `Selected(HashSet<_>)` covers only explicit names.
+An empty selected set remains empty. Inspection names have no defined order, and
+an empty `attribute_names()` result alone cannot distinguish all from empty.
+
+The provider discovers and validates these combinations:
+
+- **`user`:** `user_type`, `user_state`, `password`; create, read, update, delete.
+- **`user_contact`:** `contact_type`, `value`, `state`; create, read, update, delete.
+- **`user_profile`:** `name`; create, read, update, delete.
+- **`user_preferences`:** `allow_notifications`; create, read, update, delete.
+- **`user_permission`:** `id`, `principal_type`, `principal_id`, `perm_type`,
+  `resource`, `resource_id`, `action`, `attributes`; create, read, delete.
+  Grants are replaced through creation/revocation rather than an update operation.
+
+`password` uses the existing attribute-coverage rules: a matching explicit grant
+must include it, or a matching `All` grant covers it. Existing selected grants
+without `password` do not acquire credential access. Permission checks do not
+serialize stored credentials; transport responses and diagnostics must omit hashes.
+The user model retains the encoded hash for future trusted verification code;
+hashing and password mutations remain separate work.
+
+Discovery describes supported checks, not the existence of every underlying CRUD
+workflow or a grant of access. Shared fields remain public; the generic grant is
+not a lifecycle typestate. Service validation checks resource/attribute applicability
+in addition to the structural conversion performed by the repository.
+
+### 8.3 Authorization and management flows
+
+1. The trusted caller authenticates a user and resolves its role. Checks receive
+   these identifiers; management methods receive them in `PermissionActor`
+   separately from the recipient.
+2. The provider validates requested resource/action/attribute combinations, then
+   reads grants for both user and role. Failed reads and invalid stored combinations
+   return operational/invalid-data errors, not denial or partial results.
+3. Match resource and action. Collection grants may cover collection or object
+   requests; object grants cover only that object UUID and never a collection.
+4. Combine selected attributes across matching user and role grants; any matching
+   `All` covers every requested attribute. Require at least one matching grant and
+   coverage of every requested attribute. Empty requests still require a grant.
+5. Return success or a structured authorization denial. Checks do not mutate grants.
+
+Management uses the same checks against `user_permission`:
+
+- **Create:** Require collection create access covering all written fields
+  (`principal_type`, `principal_id`, `perm_type`, `resource`, `resource_id`, `action`,
+  `attributes`). The database generates `id`. Validate the proposed grant and insert
+  only after authorization. Create methods take explicit attribute sets: an empty
+  set never means `All`. Actors with permission-record create access may delegate
+  grants; no additional requirement to possess the delegated grant is imposed.
+- **List:** Require collection read access to all eight returned fields before
+  fetching the recipient's grants. The service returns whole grants without
+  partial-field projection. An empty result means the recipient has no grants.
+- **Revoke:** Require object delete access on the permission UUID; collection delete
+  grants also qualify. Delete by UUID. Repeated authorized revocation succeeds even
+  if the grant is already absent. An unauthorized absent-ID request still fails.
+- **Bootstrap:** Provision initial administrator grants through a trusted operation
+  outside this service. Migration 002 seeds none. Repository APIs are not an
+  alternative authorization entry point for untrusted callers.
+
+Reads are uncached and service checks re-read grants for each operation. The two
+principal reads and subsequent mutations are not a single serializable transaction;
+concurrent changes can race evaluation. This implementation does not guarantee
+atomic revocation versus an in-flight business action.
+
+### 8.4 Persistence and errors
+
+[Migration 002](../migrations/core_db/002_user_permissions.sql) creates the grant
+table, explicit PostgreSQL enums, scope constraint, and recipient lookup index.
+See [data mapping and deployment](004-data-architecture.md#5-migration-and-implementation-gaps).
+
+1. SQLx decodes fields directly into `UserPermissionData` using explicit enum type
+   names and snake_case spellings. No duplicate row model is used.
+2. `UserPermission::from_data` validates object/collection IDs and parses the
+   attributes text as JSON `"all"` or an array such as `["name"]`. Duplicate names
+   collapse; `[]` selects nothing. Malformed JSON, unknown names, or incompatible
+   shapes produce typed conversion errors.
+3. Repository reads return only checked grants. Any malformed matching row fails
+   the lookup; invalid data is never silently omitted or treated as absence.
+4. Inserts use `RETURNING` and validate the returned row inside the insert
+   transaction. Commit only after validation; return success after commit.
+   Deletion returns whether a row was removed, leaving idempotency to the service.
+
+`UserPermissionDataError` retains `MissingResourceId`, `UnexpectedResourceId`, and
+`InvalidAttributes`. `UserPermissionsRepositoryError` distinguishes `Unavailable`,
+`InvalidData`, and `Unexpected`. Service translation preserves those distinctions
+in `PermissionProviderError`, which additionally includes `InvalidRequest` and
+`Denied(UnauthorizedError)`. Messages expose no SQL, raw JSON, or principal IDs;
+HTTP mappings remain the responsibility of future adapters. These errors currently
+classify failures without retaining underlying SQLx diagnostic sources.
+
+### 8.5 Verification and remaining integration
+
+Colocated tests cover vocabulary/decoding, trait inspection, permission combinations,
+management denial without side effects, supported combinations, error translation,
+and safe error representations. The isolated
+[permission integration target](../tests/user_permissions_persistence.rs) covers
+migration, principal isolation, round trips, invalid stored data, failed-insert
+rollback, and service authorization/revocation through PostgreSQL. Run it using the
+[disposable database setup](../docker-compose/README.md#permission-storage-tests).
+
+<a id="open-005-4"></a>
+
+**OPEN-005-4 — Permission integration and consistency**
+
+- **Status:** Partially resolved by REQ-2.5.2 and ADR-007. Additive grants, scope
+  coverage, management authority, vocabulary, async outcomes, and storage are now
+  implemented.
+- **Decision needed:** Authentication and role-resolution integration, controlled
+  initial provisioning, HTTP responses, principal/resource existence validation,
+  lifecycle cleanup of grants, and stronger consistency for concurrent revocation.
+  Organisation membership rules remain in
+  [OPEN-002-1](002-detailed-requirements.md#open-002-1).
+- **Affected implementation:** HTTP adapters, callers of user business services,
+  identity/role services, provisioning, and any future transaction-aware store.
+- **Required evidence:** Integrated authenticated requests and scope isolation,
+  bootstrap/delegation scenarios, lifecycle cleanup, and the chosen concurrency
+  guarantees. Provider tests alone do not establish those end-to-end outcomes.
